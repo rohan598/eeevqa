@@ -14,7 +14,6 @@ from transformers import AutoProcessor
 from eeevqa.utils.args import parse_args
 from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list
-from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_rouge
 
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
 
@@ -118,7 +117,7 @@ if __name__ == '__main__':
 TODO:
 
 Series Task-1:
-1-> Change structure of the code to follow a package
+1-> Change structure of the code to follow a package 
 2-> Run stats on token size for lecture and text context combined and get visual results for it
 3-> Write code for combining bert and pix2struct
     -> experiment with MLP, MHA and attention

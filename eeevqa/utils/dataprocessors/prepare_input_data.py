@@ -1,3 +1,14 @@
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=[".git", "setup.py"],
+    pythonpath=True,
+    project_root_env_var=True,
+    dotenv=True,
+    cwd=True,
+)
+
 import os
 import numpy as np
 import pdfkit
@@ -6,8 +17,8 @@ import fitz
 from PIL import Image, ImageOps
 from collections import namedtuple
 
-from eeevqa import read_captions, read_problem_list, read_pid_splits
-from eeevqa import parse_args
+from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
+from eeevqa.utils.args import parse_args
 
 # data accesor function
 def get_choice_text(problem, options, verbose = False):

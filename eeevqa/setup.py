@@ -5,7 +5,7 @@ setup(name='eeevqa',
       description="EEE MM VQA COT work",
       author = "Rohan Wadhawan",
       license="MIT",
-      url="https://github.com/rohan598/eeevqa.git",
+      url="git@github.com:rohan598/eeevqa.git",
       packages=find_packages(),
       #zip_safe = False
 )

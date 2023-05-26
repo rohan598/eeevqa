@@ -104,7 +104,7 @@ def calculate_rouge(results, data): # expects results to be dictionary
 ########################
 ## Sentence Similarity
 ########################
-def similariry_score(str1, str2, model):
+def similarity_score(str1, str2, model):
     # compute embedding for both lists
     embedding_1 = model.encode(str1, convert_to_tensor=True)
     embedding_2 = model.encode(str2, convert_to_tensor=True)
@@ -112,14 +112,14 @@ def similariry_score(str1, str2, model):
     return score
 
 
-def calculate_similariry(results, data, model):
+def calculate_similarity(results, data, model):
     scores = []
     for qid, output in results.items():
         prediction = extract_explanation(output)
         target = data[qid]["lecture"] + " " + data[qid]["solution"]
         target = target.strip()
 
-        score = similariry_score(target, prediction, model)
+        score = similarity_score(target, prediction, model)
         scores.append(score)
 
     avg_score = sum(scores) / len(scores)

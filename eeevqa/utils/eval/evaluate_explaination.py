@@ -1,3 +1,12 @@
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=[".git", "setup.py"],
+    pythonpath=True,
+    dotenv=True,
+)
+
 import json
 import argparse
 import warnings
