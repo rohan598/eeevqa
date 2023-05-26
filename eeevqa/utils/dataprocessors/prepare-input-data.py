@@ -6,8 +6,8 @@ import fitz
 from PIL import Image, ImageOps
 from collections import namedtuple
 
-from ..dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
-from ..args import parse_args
+from eeevqa import read_captions, read_problem_list, read_pid_splits
+from eeevqa import parse_args
 
 # data accesor function
 def get_choice_text(problem, options, verbose = False):
