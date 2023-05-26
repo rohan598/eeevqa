@@ -11,12 +11,12 @@ import torch
 
 from transformers import AutoProcessor
 
-from utils.args import parse_args
-from utils.dataloaders.sciencevqa import ScienceQADataModule
-from utils.dataloaders.raw_data import read_captions, read_problem_list
-from utils.eval.evaluations import create_result_dict, calculate_acc, calculate_rouge
+from eeevqa.utils.args import parse_args
+from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule
+from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list
+from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_rouge
 
-from models.pix2struct.model import Pix2StructVanilla
+from eeevqa.models.pix2struct.model import Pix2StructVanilla
 
 if __name__ == '__main__':
     seed_everything(42)
