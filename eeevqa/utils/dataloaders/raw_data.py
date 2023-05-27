@@ -12,8 +12,8 @@ def read_problem_list(json_files_path, problems_filename):
     problem_list = pd.read_json(os.path.join(os.getcwd(), json_files_path, problems_filename))
     return problem_list
 
-def read_pid_splits():
-    with open(os.path.join(os.getcwd(), "data", "scienceqa", "pid_splits.json")) as json_file:
+def read_pid_splits(json_files_path, pidsplits_filename):
+    with open(os.path.join(os.getcwd(), json_files_path, pidsplits_filename)) as json_file:
         data = json.load(json_file)
     return data
 

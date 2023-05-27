@@ -1,8 +1,8 @@
-import pyrootutils
+import rootutils
 
-root = pyrootutils.setup_root(
+root = rootutils.setup_root(
     search_from=__file__,
-    indicator=[".git", "setup.py"],
+    indicator="setup.py",
     pythonpath=True,
     dotenv=True,
 )
