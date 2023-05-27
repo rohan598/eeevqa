@@ -298,13 +298,13 @@ if __name__ == '__main__':
     # pipeline for image dataset generation
     if args.skip_image_gen == False:
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
-                        save_dir=os.path.join(os.getcwd(), args.pickle_files_path, args.data_type), sample_subset = args.sample_subset, 
+                        save_dir=os.path.join(args.data_root, args.pickle_files_dir, args.data_type), sample_subset = args.sample_subset, 
                         crop_padding = args.crop_padding, params = params)
     
     # create dataset
     dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
-                      source=args.data_split, save_dir = os.path.join(os.getcwd(), 
-                      args.pickle_files_path, args.data_type), 
+                      source=args.data_split, save_dir = os.path.join(args.data_root, 
+                      args.pickle_files_dir, args.data_type), 
                       output_format=args.output_format,
                       options = args.options, preprocess_image = None, 
                       sample_subset = args.sample_subset
@@ -313,7 +313,7 @@ if __name__ == '__main__':
     # save dataset
     save_dataset(
         dataset,
-        save_dir = os.path.join(os.getcwd(), 
-                      args.pickle_files_path, args.data_type),
+        save_dir = os.path.join(args.data_root,
+                      args.pickle_files_dir, args.data_type),
         filename = f"{args.data_split}.pkl"
     )

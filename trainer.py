@@ -18,11 +18,14 @@ from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
 
 if __name__ == '__main__':
+    # Global settings
     seed_everything(42)
-    
+    torch.set_float32_matmul_precision('medium')
+
     print("----- Parsed Arguments -----")
     args = parse_args()
 
+    print(args.output_root)
     print("----- Read Dataset -----") 
     if args.task_name == "univqa":
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
@@ -30,7 +33,7 @@ if __name__ == '__main__':
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
 
     captions_dict = read_captions(args.data_root, args.captions_filename)
-    problem_list = read_problem_list(args.json_files_path, args.problems_filename)
+    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
 
     print("----- Setup Lightning Data Module -----")
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -54,7 +57,7 @@ if __name__ == '__main__':
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
             processor = processor,
-            pickle_files_path = os.path.join(args.pickle_files_path, args.data_type),
+            pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_type),
             train_split =  train_split,
             val_split =  val_split,
             test_split =  test_split,
@@ -77,7 +80,7 @@ if __name__ == '__main__':
 
     print("----- Setup Model Callbacks -----")
     checkpoint_callback = ModelCheckpoint(
-            dirpath=args.checkpoint_root,
+            dirpath=os.path.join(args.output_root, args.checkpoint_dir),
             filename='{epoch}-{val_loss:.2f}-{val_metric:.2f}',
             monitor='val_acc',
             mode = "max",
@@ -87,7 +90,7 @@ if __name__ == '__main__':
     )
     wandb_logger = WandbLogger(
         project="mmvqa",
-        name = f"run_unimodal_{train_split}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
+        name = f"run_{args.data_type}_{train_split}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
         save_dir = args.output_root
     )
 

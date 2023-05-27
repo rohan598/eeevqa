@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from collections.abc import Callable
 
-from .raw_data import load_data_split
+from eeevqa.utils.dataloaders.raw_data import load_data_split
 import torch
 
 class VQADataset(Dataset):
