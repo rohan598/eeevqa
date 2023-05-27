@@ -284,8 +284,8 @@ if __name__ == '__main__':
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
         
     captions_dict = read_captions(args.data_root, args.captions_filename)
-    problem_list = read_problem_list(args.json_files_path, args.problems_filename)
-    pid_splits = read_pid_splits(args.json_files_path, args.pidsplits_filename)
+    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+    pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
 
 
     # set params for html
@@ -297,11 +297,13 @@ if __name__ == '__main__':
 
     # pipeline for image dataset generation
     if args.skip_image_gen == False:
+        print("----- Creating Image Collection -----") 
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
                         save_dir=os.path.join(args.data_root, args.pickle_files_dir, args.data_type), sample_subset = args.sample_subset, 
                         crop_padding = args.crop_padding, params = params)
     
     # create dataset
+    print("----- Creating Dataset from Image Collection -----") 
     dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
                       source=args.data_split, save_dir = os.path.join(args.data_root, 
                       args.pickle_files_dir, args.data_type), 
@@ -311,6 +313,7 @@ if __name__ == '__main__':
                       ) 
     
     # save dataset
+    print("----- Saving created dataset -----") 
     save_dataset(
         dataset,
         save_dir = os.path.join(args.data_root,

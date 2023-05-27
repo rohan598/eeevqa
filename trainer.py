@@ -120,9 +120,8 @@ if __name__ == '__main__':
 TODO:
 
 Series Task-1:
-1-> Change structure of the code to follow a package 
-2-> Run stats on token size for lecture and text context combined and get visual results for it
-3-> Write code for combining bert and pix2struct
+1-> Run stats on token size for lecture and text context combined and get visual results for it
+2-> Write code for combining bert and pix2struct
     -> experiment with MLP, MHA and attention
 
 
@@ -130,8 +129,8 @@ Series Task-2:
 1-> Run baseline on mini dataset
 
 Series Task-3: 
-1-> Test the structure and generate unimodal train dataset (dep Task-1:1)
-2-> Test the structure and generate multimodal dataset (dep Task-1:2)
+1-> Test the structure and generate unimodal train dataset 
+2-> Test the structure and generate multimodal dataset (dep Task-1:1)
 
 
 '''
