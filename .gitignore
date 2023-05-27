@@ -132,9 +132,6 @@ dmypy.json
 # vision features
 vision_features/
 
-# models
-models/
-
 # data
 data/
 
@@ -148,9 +145,7 @@ experiments/
 .tmp.driveupload
 
 # lightning
-
 lightning_logs/
-results/
 
-# transformers
-transformers/
+#results
+results/
