@@ -16,7 +16,7 @@ from PIL import Image, ImageOps
 from collections import namedtuple
 
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
-from eeevqa.utils.args import parse_args
+from eeevqa.utils.args import parse_args, parse_boolean
 
 # data accesor function
 def get_choice_text(problem, options, verbose = False):
@@ -290,13 +290,15 @@ if __name__ == '__main__':
 
     # set params for html
     params = {
-        "set_question_as_header": args.set_question_as_header,
-        "skip_text_context":args.skip_text_context,
-        "skip_lecture":args.skip_lecture
+        "set_question_as_header": parse_boolean(args.set_question_as_header),
+        "skip_text_context":parse_boolean(args.skip_text_context),
+        "skip_lecture":parse_boolean(args.skip_lecture),
+        "options":args.options
     }
 
     # pipeline for image dataset generation
-    if args.skip_image_gen == False:
+    skip_image_gen = parse_boolean(args.skip_image_gen)
+    if skip_image_gen == False:
         print("----- Creating Image Collection -----") 
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
                         save_dir=os.path.join(args.data_root, args.pickle_files_dir, args.data_type), sample_subset = args.sample_subset, 

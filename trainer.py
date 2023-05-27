@@ -25,7 +25,6 @@ if __name__ == '__main__':
     print("----- Parsed Arguments -----")
     args = parse_args()
 
-    print(args.output_root)
     print("----- Read Dataset -----") 
     if args.task_name == "univqa":
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
@@ -120,7 +119,7 @@ if __name__ == '__main__':
 TODO:
 
 Series Task-1:
-1-> Run stats on token size for lecture and text context combined and get visual results for it
+1-> Run stats on token size for lecture and text context ind & combined and get visual results for it
 2-> Write code for combining bert and pix2struct
     -> experiment with MLP, MHA and attention
 
@@ -129,7 +128,7 @@ Series Task-2:
 1-> Run baseline on mini dataset
 
 Series Task-3: 
-1-> Test the structure and generate unimodal train dataset 
+1-> Test the structure and generate unimodal train dataset (requires Gcp)
 2-> Test the structure and generate multimodal dataset (dep Task-1:1)
 
 

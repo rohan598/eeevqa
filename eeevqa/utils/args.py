@@ -1,5 +1,15 @@
 import argparse
 
+def parse_boolean(value):
+    value = value.lower()
+
+    if value in ["true", "yes", "y", "1", "t"]:
+        return True
+    elif value in ["false", "no", "n", "0", "f"]:
+        return False
+
+    return False
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -20,13 +30,13 @@ def parse_args():
     parser.add_argument('--base_model_name', type=str, default="google/pix2struct-base")
     
     # data generation args
-    parser.add_argument('--skip_image_gen', type=bool, choices=[False,True], default=True)
+    parser.add_argument('--skip_image_gen', type=str, default="True")
     parser.add_argument('--data_split', type=str, default='minitrain')
     parser.add_argument('--sample_subset', default=None)
     parser.add_argument('--crop_padding', type=int, default=30)
-    parser.add_argument('--set_question_as_header', type=bool, choices=[False,True], default=False)
-    parser.add_argument('--skip_text_context', type=bool, choices=[False,True], default=False)
-    parser.add_argument('--skip_lecture', type=bool, choices=[False,True], default=False)
+    parser.add_argument('--set_question_as_header', type=str, default="False")
+    parser.add_argument('--skip_text_context', type=str, default="False")
+    parser.add_argument('--skip_lecture', type=str, default="False")
 
     # training args
     parser.add_argument('--train_split', type=str, default='minitrain', choices=['train', 'trainval', 'minitrain'])
