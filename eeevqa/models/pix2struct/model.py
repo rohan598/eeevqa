@@ -2,13 +2,13 @@ from pytorch_lightning import LightningModule
 
 from transformers import Pix2StructForConditionalGeneration, AutoProcessor
 
-from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_rouge
-
 from collections.abc import Sequence
 
 import torch
 
 from functools import reduce
+
+from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_roug
 
 class Pix2StructVanilla(LightningModule):
     def __init__(

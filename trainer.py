@@ -106,8 +106,9 @@ if __name__ == '__main__':
     else:
         trainer = Trainer(
         max_epochs=args.epoch,
-        accelerator="auto",
-        devices=1 if torch.cuda.is_available() else None,  
+        accelerator="gpu",
+        devices=args.gpu_cnt if torch.cuda.is_available() else None,
+        strategy="ddp",  
         callbacks=[checkpoint_callback],
         logger = wandb_logger,
         )
@@ -125,7 +126,7 @@ Series Task-1:
 
 
 Series Task-2:
-1-> Run baseline on mini dataset
+1-> Create multi-gpu env
 
 Series Task-3: 
 1-> Test the structure and generate unimodal train dataset (requires Gcp)

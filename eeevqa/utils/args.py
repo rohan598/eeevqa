@@ -28,7 +28,9 @@ def parse_args():
     parser.add_argument('--options', type=list, default=["A", "B", "C", "D", "E"])    
     parser.add_argument('--output_format', type=str, default="AE")
     parser.add_argument('--base_model_name', type=str, default="google/pix2struct-base")
-    
+    parser.add_argument('--gpu_cnt', type=int, default=1)
+
+
     # data generation args
     parser.add_argument('--skip_image_gen', type=str, default="True")
     parser.add_argument('--data_split', type=str, default='minitrain')
