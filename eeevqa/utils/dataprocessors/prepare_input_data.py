@@ -14,6 +14,7 @@ import pickle
 import fitz
 from PIL import Image, ImageOps
 from collections import namedtuple
+import torchvision.transforms as transforms
 
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
 from eeevqa.utils.args import parse_args, parse_boolean
@@ -145,10 +146,10 @@ def convert_pdf_to_image(path_to_inputfile, path_to_outputfile):
     mat = fitz.Matrix(zoom_x, zoom_y)  # zoom factor 2 in each dimension
 
     filename = f"{path_to_inputfile}.pdf"
-    doc = fitz.open(filename)  # open document
-    for page in doc:  # iterate through the pages
-        pix = page.get_pixmap(matrix=mat)  # render page to an image
-        pix.save(f"{path_to_outputfile}.jpg")  # store image as JPG
+    with fitz.open(filename) as doc:
+        for page in doc:  # iterate through the pages
+            pix = page.get_pixmap(matrix=mat)  # render page to an image
+            pix.save(f"{path_to_outputfile}.jpg")  # store image as JPG
 
 # Whitespace removal image
 def remove_white_space(filename, padding = 30, visualize = False):
@@ -227,12 +228,16 @@ def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, ou
     lecture =  problem_list[sample_num]["lecture"] 
     
     #input
-    image = Image.open(f"{img_filename}.jpg")
-    image_mean = 0
-    image_std = 0
-    if preprocess_image is not None:
-        image, image_mean, image_std = preprocess_image(image)
-    
+    pil_to_tensor_transform = transforms.Compose([
+    transforms.PILToTensor()
+    ])
+    with Image.open(f"{img_filename}.jpg") as img:
+        image = pil_to_tensor_transform(img)
+        image_mean = 0
+        image_std = 0
+        if preprocess_image is not None:
+            image, image_mean, image_std = preprocess_image(image)
+
     # Outputs
     if output_format == 'A':
         output = f"Answer: The answer is {problem_list[sample_num]['answer']}."
@@ -310,7 +315,7 @@ if __name__ == '__main__':
     skip_image_gen = parse_boolean(args.skip_image_gen)
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
 
-    if os.path.exists(save_dir) == False or skip_image_gen == False:
+    if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
         print("----- Creating Image Collection -----") 
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
                         save_dir=save_dir, sample_subset = args.sample_subset, 
