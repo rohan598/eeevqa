@@ -218,10 +218,13 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
             os.remove(f"{tmp_hpi_filename}.pdf")
 
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None):
+def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None):
     
     # header text
     header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
+
+    text_context =  problem_list[sample_num]["hint"] 
+    lecture =  problem_list[sample_num]["lecture"] 
     
     #input
     image = Image.open(f"{img_filename}.jpg")
@@ -242,11 +245,17 @@ def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, ou
     if output.endswith("BECAUSE:"):
         output = output.replace("BECAUSE:", "").strip()
     
-    scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
+    if task_name == "univqa":
+        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
+    else:
+        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
+
     return scienceqa_example
 
 def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_dir = "", output_format="AE", \
-                                 options = None, preprocess_image = None, sample_subset = None):
+                                 options = None, 
+                                 preprocess_image = None, sample_subset = None,
+                                 task_name = None):
     
     
     idx_list = pid_splits[source] 
@@ -263,7 +272,8 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_
         ifile = os.path.join(os.getcwd(), save_dir, f"{source}_{sample_num}")
         dataset.append(create_one_scienceqa_example(problem_list, img_filename=ifile, \
                                                     sample_num=sample_num, output_format=output_format, \
-                                                    options = options, preprocess_image = preprocess_image))
+                                                    options = options, preprocess_image = preprocess_image,
+                                                    task_name = task_name))
     return dataset
         
 # saving functionality
@@ -282,7 +292,7 @@ if __name__ == '__main__':
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
     else:
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
-        
+    
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
     pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
@@ -311,7 +321,8 @@ if __name__ == '__main__':
                       args.pickle_files_dir, args.data_type), 
                       output_format=args.output_format,
                       options = args.options, preprocess_image = None, 
-                      sample_subset = args.sample_subset
+                      sample_subset = args.sample_subset,
+                      task_name = args.task_name
                       ) 
     
     # save dataset

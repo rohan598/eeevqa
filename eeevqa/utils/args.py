@@ -15,14 +15,14 @@ def parse_args():
 
     # common args
     parser.add_argument('--task_name', type=str, default='univqa')
-    parser.add_argument('--data_root', type=str, default='./data')
+    parser.add_argument('--data_root', type=str, default='data')
     parser.add_argument('--json_files_dir', type=str, default='scienceqa')
     parser.add_argument('--pickle_files_dir', type=str, default='new_data')
     parser.add_argument('--data_type', type=str, default='unimodal')
     parser.add_argument('--captions_filename', type=str, default='captions.json')
     parser.add_argument('--problems_filename', type=str, default='problems.json')
     parser.add_argument('--pidsplits_filename', type=str, default='pid_splits.json')
-    parser.add_argument('--output_root', type=str, default='./results')
+    parser.add_argument('--output_root', type=str, default='results')
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
 
     parser.add_argument('--options', type=list, default=["A", "B", "C", "D", "E"])    

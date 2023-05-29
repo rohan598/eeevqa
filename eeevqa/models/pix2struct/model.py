@@ -8,7 +8,7 @@ import torch
 
 from functools import reduce
 
-from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_roug
+from eeevqa.utils.eval.evaluations import create_result_dict, calculate_acc, calculate_rouge
 
 class Pix2StructVanilla(LightningModule):
     def __init__(

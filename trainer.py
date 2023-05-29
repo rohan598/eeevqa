@@ -120,13 +120,14 @@ if __name__ == '__main__':
 TODO:
 
 Series Task-1:
-1-> Run stats on token size for lecture and text context ind & combined and get visual results for it
+1-> Review how pix2struct works for AID2 and docvqa
+
 2-> Write code for combining bert and pix2struct
     -> experiment with MLP, MHA and attention
 
 
 Series Task-2:
-1-> Create multi-gpu env
+1-> Create Hydra Template
 
 Series Task-3: 
 1-> Test the structure and generate unimodal train dataset (requires Gcp)
