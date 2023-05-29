@@ -309,7 +309,8 @@ if __name__ == '__main__':
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
-    if os.path.exists(save_dir) == True and skip_image_gen == True:
+
+    if os.path.exists(save_dir) == False or skip_image_gen == False:
         print("----- Creating Image Collection -----") 
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
                         save_dir=save_dir, sample_subset = args.sample_subset, 
