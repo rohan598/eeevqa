@@ -87,6 +87,11 @@ def parse_args():
                         default = 1e-5,
                         help='learning rate')
 
+    parser.add_argument('--num_workers', 
+                        type=int,
+                        default = 8,
+                        help='number of cpu workers for dataloading')
+
     args = parser.parse_args()
 
     return args

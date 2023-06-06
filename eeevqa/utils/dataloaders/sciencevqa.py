@@ -6,10 +6,11 @@ from eeevqa.utils.dataloaders.raw_data import load_data_split
 import torch
 
 class VQADataset(Dataset):
-    def __init__(self, dataset, processor, max_patches):
+    def __init__(self, dataset, processor, max_patches, output_format):
         self.dataset = dataset
         self.processor = processor
         self.max_patches = max_patches
+        self.output_format = output_format
 
     def __len__(self):
         return len(self.dataset)
@@ -19,21 +20,36 @@ class VQADataset(Dataset):
         encoding = self.processor(images=item.image, return_tensors="pt", add_special_tokens=True, max_patches=self.max_patches)
         
         encoding = {k:v.squeeze() for k,v in encoding.items()}
-        encoding["text"] = item.output
+        
+        if self.output_format == "AE":
+            encoding["text"] = item.output
+
+        elif self.output_format == "A":
+            encoding["text"] = item.output.split("BECAUSE:")[0].strip()
+
+        elif self.output_format == "EA":
+            split_text = item.output.split("BECAUSE:")
+            if len(split_text)==1:
+                encoding["text"] = split_text[0].strip()
+            else:
+                answer = split_text[0].split("Answer: The answer is ")[1].split(".")[0].strip()
+                explanation = split_text[1].strip()
+                encoding["text"] = f"Answer: {explanation} The answer is {answer}."
+
         encoding["sample_num"] = item.sample_num
         return encoding
     
 
 
-def create_dataloaders(train_dataset, val_dataset, test_dataset, processor, collator,max_patches, batch_size):
+def create_dataloaders(train_dataset, val_dataset, test_dataset, processor, collator, max_patches, output_format, batch_size):
 
-    train_vqadataset = VQADataset(train_dataset, processor, max_patches)
+    train_vqadataset = VQADataset(train_dataset, processor, max_patches, output_format)
     train_dataloader = DataLoader(train_vqadataset, shuffle=True, batch_size=batch_size, collate_fn=collator)
 
-    val_vqadataset = VQADataset(val_dataset, processor, max_patches)
+    val_vqadataset = VQADataset(val_dataset, processor, max_patches, output_format)
     val_dataloader = DataLoader(val_vqadataset, shuffle=True, batch_size = batch_size, collate_fn=collator)
 
-    test_vqadataset = VQADataset(test_dataset, processor, max_patches)
+    test_vqadataset = VQADataset(test_dataset, processor, max_patches, output_format)
     test_dataloader = DataLoader(test_vqadataset, shuffle=True, batch_size=batch_size, collate_fn=collator)
 
     return train_dataloader, val_dataloader, test_dataloader
@@ -43,9 +59,10 @@ class ScienceQADataModule(LightningDataModule):
     def __init__(
             self,
             model_name_or_path:str,
-            task_name: str = "mmvqa",
+            task_name: str = "univqa",
             max_seq_length:int = 512,
             max_patches:int = 1024,
+            output_format:str = "AE",
             train_batch_size:int = 1,
             eval_batch_size:int = 1,
             processor:Callable = None,
@@ -53,6 +70,7 @@ class ScienceQADataModule(LightningDataModule):
             train_split:str = "minitrain",
             val_split:str = "minival",
             test_split:str = "minitest",
+            num_workers:int = 32,
             **kwargs,
     ):
         super().__init__()
@@ -60,6 +78,7 @@ class ScienceQADataModule(LightningDataModule):
         self.task_name = task_name
         self.max_seq_length = max_seq_length
         self.max_patches = max_patches
+        self.output_format = output_format
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.pickle_files_path = pickle_files_path
@@ -67,16 +86,17 @@ class ScienceQADataModule(LightningDataModule):
         self.val_split = val_split
         self.test_split = test_split
         self.processor = processor 
+        self.num_workers = num_workers
 
     def prepare_data(self):
         pass
 
     def setup(self, stage: str):
-        self.train_dataset = VQADataset(load_data_split(self.pickle_files_path, self.train_split), self.processor, self.max_patches)
+        self.train_dataset = VQADataset(load_data_split(self.pickle_files_path, self.train_split), self.processor, self.max_patches, self.output_format)
 
-        self.val_dataset = VQADataset(load_data_split(self.pickle_files_path, self.val_split), self.processor, self.max_patches)
+        self.val_dataset = VQADataset(load_data_split(self.pickle_files_path, self.val_split), self.processor, self.max_patches, self.output_format)
 
-        self.test_dataset = VQADataset(load_data_split(self.pickle_files_path, self.test_split), self.processor, self.max_patches)
+        self.test_dataset = VQADataset(load_data_split(self.pickle_files_path, self.test_split), self.processor, self.max_patches, self.output_format)
 
     def collator(self, batch):
         new_batch = {"flattened_patches":[], "attention_mask":[]}
@@ -99,10 +119,10 @@ class ScienceQADataModule(LightningDataModule):
         return new_batch
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=self.train_batch_size, collate_fn=self.collator)
+        return DataLoader(self.train_dataset, shuffle=True, batch_size=self.train_batch_size, collate_fn=self.collator, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=True, batch_size=self.eval_batch_size, collate_fn=self.collator)
+        return DataLoader(self.val_dataset, batch_size=self.eval_batch_size, collate_fn=self.collator, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, shuffle=True, batch_size=self.eval_batch_size, collate_fn=self.collator)
+        return DataLoader(self.test_dataset, batch_size=self.eval_batch_size, collate_fn=self.collator, num_workers=self.num_workers)

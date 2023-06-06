@@ -19,8 +19,8 @@ class Pix2StructVanilla(LightningModule):
             task_name: str = "mmvqa",
             learning_rate: float = 1e-5,
             adam_epsilon: float = 1e-8,
-            train_batch_size: int = 32,
-            eval_batch_size: int = 32,
+            train_batch_size: int = 2,
+            eval_batch_size: int = 2,
             **kwargs,
     ):
         super().__init__()
@@ -66,7 +66,7 @@ class Pix2StructVanilla(LightningModule):
 
         outputs = {"loss": loss, "qids":qids , "preds":text_predictions}
         self.training_step_outputs.append(outputs)
-        self.log("train_per_step_loss", loss)
+        self.log("train_per_step_loss", loss, sync_dist=True, batch_size = self.train_batch_size)
 
         return loss
     
@@ -79,9 +79,9 @@ class Pix2StructVanilla(LightningModule):
         loss = [x["loss"] for x in self.training_step_outputs]
         loss = reduce(lambda x, y : x + y, loss)
 
-        self.log("train_loss", loss, prog_bar=True)
-        self.log("train_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True)
-        self.log("train_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True)
+        self.log("train_loss", loss, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
+        self.log("train_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
+        self.log("train_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
 
         self.training_step_outputs.clear()
 
@@ -99,7 +99,7 @@ class Pix2StructVanilla(LightningModule):
         outputs = {"loss": val_loss, "qids":qids , "preds":text_predictions}
         self.validation_step_outputs.append(outputs)
 
-        self.log("val_per_step_loss", val_loss)
+        self.log("val_per_step_loss", val_loss, sync_dist=True, batch_size = self.eval_batch_size)
 
         return outputs
     
@@ -112,9 +112,9 @@ class Pix2StructVanilla(LightningModule):
         loss = [x["loss"] for x in self.validation_step_outputs]
         loss = reduce(lambda x, y : x + y, loss)
 
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True)
-        self.log("val_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True)
+        self.log("val_loss", loss, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+        self.log("val_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+        self.log("val_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
 
         self.validation_step_outputs.clear()
 
