@@ -131,8 +131,15 @@ if __name__ == '__main__':
 
 '''
 TODO:
+Corrections:
+1-> Training loop
+2-> lr scheduler
+3-> dataset
+
+
 
 Tasks-1:
+
 1-> create new data generator using just PIL
 2-> create three types of data
     -> QMICL
