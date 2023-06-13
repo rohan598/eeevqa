@@ -5,7 +5,8 @@ from sys import platform
 from datetime import datetime
 
 from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+
 from pytorch_lightning.loggers import WandbLogger
 import torch
 
@@ -24,6 +25,7 @@ if __name__ == '__main__':
 
     print("----- Parsed Arguments -----")
     args = parse_args()
+    print(args.output_format)
 
     print("----- Read Dataset -----") 
     if args.task_name == "univqa":
@@ -43,11 +45,14 @@ if __name__ == '__main__':
     train_split =  args.train_split
     val_split =  args.val_split
     test_split =  args.test_split
+    log_every_n_steps = args.log_every_n_steps
 
     if args.dummy_run == "yes":
         train_split = "tiny_train" 
         val_split = "tiny_val"
         test_split = "tiny_test"
+        log_every_n_steps = 1
+
 
     sdm = ScienceQADataModule(
             model_name_or_path=args.base_model_name,
@@ -72,27 +77,33 @@ if __name__ == '__main__':
             problem_list = problem_list,
             options = args.options,
             task_name = args.task_name,
+            processor=processor,
             learning_rate = args.learning_rate,
             adam_epsilon = 1e-8,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
+            output_format=args.output_format,
+            warmup_steps = args.warmup_steps,
+            total_steps = args.total_steps,
+            cycles = args.cycles
     )
 
     print("----- Setup Model Callbacks -----")
     checkpoint_callback = ModelCheckpoint(
             dirpath=os.path.join(args.output_root, args.checkpoint_dir),
-            filename='{epoch}-{val_loss:.2f}-{val_metric:.2f}',
+            filename='{epoch}-{val_loss:.2f}-{val_acc:.2f}',
             monitor='val_acc',
             mode = "max",
             save_top_k = 1,
             save_last = True,
-            every_n_epochs = args.save_every,
+            every_n_epochs = args.save_every_n_epoch,
     )
     wandb_logger = WandbLogger(
         project="mmvqa",
         name = f"run_{args.data_type}_{train_split}_of_{args.output_format}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
         save_dir = args.output_root
     )
+    lr_monitor = LearningRateMonitor(logging_interval='step')
 
     print("----- Setup and fit Trainer -----")
     if platform == "darwin":
@@ -100,18 +111,19 @@ if __name__ == '__main__':
         max_epochs=5,
         accelerator="mps",
         devices=1,  
-        callbacks=[checkpoint_callback],
+        callbacks=[checkpoint_callback, lr_monitor],
         logger = wandb_logger,
         )
 
     else:
         trainer = Trainer(
-        max_epochs=args.epoch,
-        accelerator="gpu",
-        devices=args.gpu_cnt if torch.cuda.is_available() else None,
-        strategy="ddp",  
-        callbacks=[checkpoint_callback],
-        logger = wandb_logger,
+            max_epochs=args.epoch,
+            accelerator="gpu",
+            devices=args.gpu_cnt if torch.cuda.is_available() else None,
+            strategy="ddp",  
+            callbacks=[checkpoint_callback, lr_monitor],
+            logger = wandb_logger,
+            log_every_n_steps = log_every_n_steps
         )
 
     trainer.fit(model, datamodule=sdm)
@@ -120,19 +132,20 @@ if __name__ == '__main__':
 '''
 TODO:
 
-Series Task-1:
-1-> Review how pix2struct works for AID2 and docvqa
+Tasks-1:
+1-> create new data generator using just PIL
+2-> create three types of data
+    -> QMICL
+    -> QMCLI
+    -> QMI
+3-> Correct the learning rate issue
+4-> Make a better data visualizer
+5-> Run experiments on these three variants
 
-2-> Write code for combining bert and pix2struct
-    -> experiment with MLP, MHA and attention
-
-
-Series Task-2:
-1-> Create Hydra Template
-
-Series Task-3: 
-1-> Test the structure and generate unimodal train dataset (requires Gcp)
-2-> Test the structure and generate multimodal dataset (dep Task-1:1)
+6-> Start work on multimodal approach
+    -> See how you can combine the two models
+7-> Setup trainer for this
+8-> Run stage-1 training for this 
 
 
 '''

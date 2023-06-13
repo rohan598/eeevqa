@@ -67,7 +67,15 @@ def create_html_template_modular():
         '''
     return html_template
 
-def create_html_file_modular(params, df, sample_num=None):
+def create_html_template_modular_v2(tags=[]):
+    html_template = '<html> <body style="background-color:white;">'
+    for tag in tags:
+        html_template += "{" + tag + "}"           
+    html_template+="</body></html>"
+
+    return html_template
+
+def create_html_file_modular(params, df, tags=[], sample_num=None):
 
     # create individual tags
     
@@ -107,6 +115,8 @@ def create_html_file_modular(params, df, sample_num=None):
         lecture_tag = ""
     
     # compose tags to html
+    print(create_html_template_modular_v2(tags))
+    return 
     final_html_file = create_html_template_modular().format(question_tag = question_tag, choice_tag = choice_tag, \
                                           img_tag = img_tag, context_tag = context_tag, \
                                           lecture_tag = lecture_tag)
@@ -315,28 +325,30 @@ if __name__ == '__main__':
     skip_image_gen = parse_boolean(args.skip_image_gen)
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
 
-    if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
-        print("----- Creating Image Collection -----") 
-        convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
-                        save_dir=save_dir, sample_subset = args.sample_subset, 
-                        crop_padding = args.crop_padding, params = params)
+    create_html_file_modular(params, problem_list, tags=["question_tag","choice_tag","img_tag","context_tag","lecture_tag"], sample_num=1)
+
+    # if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
+    #     print("----- Creating Image Collection -----") 
+    #     convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
+    #                     save_dir=save_dir, sample_subset = args.sample_subset, 
+    #                     crop_padding = args.crop_padding, params = params)
     
-    # create dataset
-    print("----- Creating Dataset from Image Collection -----") 
-    dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
-                      source=args.data_split, save_dir = os.path.join(args.data_root, 
-                      args.pickle_files_dir, args.data_type), 
-                      output_format=args.output_format,
-                      options = args.options, preprocess_image = None, 
-                      sample_subset = args.sample_subset,
-                      task_name = args.task_name
-                      ) 
+    # # create dataset
+    # print("----- Creating Dataset from Image Collection -----") 
+    # dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
+    #                   source=args.data_split, save_dir = os.path.join(args.data_root, 
+    #                   args.pickle_files_dir, args.data_type), 
+    #                   output_format=args.output_format,
+    #                   options = args.options, preprocess_image = None, 
+    #                   sample_subset = args.sample_subset,
+    #                   task_name = args.task_name
+    #                   ) 
     
-    # save dataset
-    print("----- Saving created dataset -----") 
-    save_dataset(
-        dataset,
-        save_dir = os.path.join(args.data_root,
-                      args.pickle_files_dir, args.data_type),
-        filename = f"{args.data_split}.pkl"
-    )
+    # # save dataset
+    # print("----- Saving created dataset -----") 
+    # save_dataset(
+    #     dataset,
+    #     save_dir = os.path.join(args.data_root,
+    #                   args.pickle_files_dir, args.data_type),
+    #     filename = f"{args.data_split}.pkl"
+    # )

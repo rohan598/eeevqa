@@ -16,7 +16,7 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 
-def get_acc_with_contion(res_pd, key, values):
+def get_acc_with_condition(res_pd, key, values):
     if isinstance(values, list):
         total_pd = res_pd[res_pd[key].isin(values)]
     else:
@@ -26,19 +26,19 @@ def get_acc_with_contion(res_pd, key, values):
     return acc
 
 
-def get_scores(result_file, data_file):
+def get_scores(result_file, data_file, eval_split):
     # read result file
     results = json.load(open(result_file))["results"]
     num = len(results)
-    assert num == 4241
-    #print("number of questions:", num)
+    # assert num == 4241
+    print("number of questions:", num)
 
     # read data file
     sqa_data = json.load(open(data_file))
 
     # construct pandas data
     sqa_pd = pd.DataFrame(sqa_data).T
-    res_pd = sqa_pd[sqa_pd['split'] == 'test']  # test set
+    res_pd = sqa_pd[sqa_pd['split'] == eval_split]  # test set
 
     # update data
     for index, row in res_pd.iterrows():
@@ -59,21 +59,21 @@ def get_scores(result_file, data_file):
 
     scores = {
         'acc_natural':
-        get_acc_with_contion(res_pd, 'subject', 'natural science'),
+        get_acc_with_condition(res_pd, 'subject', 'natural science'),
         'acc_social':
-        get_acc_with_contion(res_pd, 'subject', 'social science'),
+        get_acc_with_condition(res_pd, 'subject', 'social science'),
         'acc_language':
-        get_acc_with_contion(res_pd, 'subject', 'language science'),
+        get_acc_with_condition(res_pd, 'subject', 'language science'),
         'acc_has_text':
-        get_acc_with_contion(res_pd, 'has_text', True),
+        get_acc_with_condition(res_pd, 'has_text', True),
         'acc_has_image':
-        get_acc_with_contion(res_pd, 'has_image', True),
+        get_acc_with_condition(res_pd, 'has_image', True),
         'acc_no_context':
-        get_acc_with_contion(res_pd, 'no_context', True),
+        get_acc_with_condition(res_pd, 'no_context', True),
         'acc_grade_1_6':
-        get_acc_with_contion(res_pd, 'grade', ['grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6']),
+        get_acc_with_condition(res_pd, 'grade', ['grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6']),
         'acc_grade_7_12':
-        get_acc_with_contion(res_pd, 'grade', ['grade7', 'grade8', 'grade9', 'grade10', 'grade11', 'grade12']),
+        get_acc_with_condition(res_pd, 'grade', ['grade7', 'grade8', 'grade9', 'grade10', 'grade11', 'grade12']),
         'acc_average':
         "{:.2f}".format(acc_average),
     }

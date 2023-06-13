@@ -2,8 +2,10 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from collections.abc import Callable
 
-from eeevqa.utils.dataloaders.raw_data import load_data_split
 import torch
+from transformers import AutoProcessor
+
+from eeevqa.utils.dataloaders.raw_data import load_data_split
 
 class VQADataset(Dataset):
     def __init__(self, dataset, processor, max_patches, output_format):
@@ -47,13 +49,40 @@ def create_dataloaders(train_dataset, val_dataset, test_dataset, processor, coll
     train_dataloader = DataLoader(train_vqadataset, shuffle=True, batch_size=batch_size, collate_fn=collator)
 
     val_vqadataset = VQADataset(val_dataset, processor, max_patches, output_format)
-    val_dataloader = DataLoader(val_vqadataset, shuffle=True, batch_size = batch_size, collate_fn=collator)
+    val_dataloader = DataLoader(val_vqadataset, batch_size = batch_size, collate_fn=collator)
 
     test_vqadataset = VQADataset(test_dataset, processor, max_patches, output_format)
-    test_dataloader = DataLoader(test_vqadataset, shuffle=True, batch_size=batch_size, collate_fn=collator)
+    test_dataloader = DataLoader(test_vqadataset, batch_size=batch_size, collate_fn=collator)
 
     return train_dataloader, val_dataloader, test_dataloader
 
+def collator(batch):
+    new_batch = {"flattened_patches":[], "attention_mask":[]}
+    texts = [item["text"] for item in batch]
+
+    processor = AutoProcessor.from_pretrained("google/pix2struct-base")
+    text_inputs = processor(text=texts, padding="max_length", truncation=True, return_tensors="pt", add_special_tokens=True, max_length=512)
+
+    new_batch["labels"] = text_inputs.input_ids
+
+    for item in batch:
+        new_batch["flattened_patches"].append(item["flattened_patches"])
+        new_batch["attention_mask"].append(item["attention_mask"])
+
+    new_batch["flattened_patches"] = torch.stack(new_batch["flattened_patches"])
+    new_batch["attention_mask"] = torch.stack(new_batch["attention_mask"])
+    new_batch["sample_num"] = [item["sample_num"] for item in batch]
+    
+    # TODO - add code for text context and lecture
+
+    return new_batch
+
+def create_eval_dataloader(pickle_files_path, eval_split, processor, max_patches, output_format, batch_size):
+    
+    dataset = VQADataset(load_data_split(pickle_files_path, eval_split),processor, max_patches, output_format)
+
+    dataloader = DataLoader(dataset, batch_size = batch_size, collate_fn=collator)
+    return dataloader
 
 class ScienceQADataModule(LightningDataModule):
     def __init__(

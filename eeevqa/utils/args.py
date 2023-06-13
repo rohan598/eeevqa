@@ -46,7 +46,13 @@ def parse_args():
     parser.add_argument('--test_split', type=str, default='minival', choices=['test', 'val', 'minival'])
 
 
-    parser.add_argument('--save_every', type=int, default=1, help='Save the result with every n examples.')
+    parser.add_argument('--save_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
+
+    parser.add_argument('--save_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
+
+    parser.add_argument('--log_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
+
+    parser.add_argument('--log_every_n_steps', type=int, default=50, help='model checkpoint with every n epochs.')
 
     parser.add_argument('--debug', action='store_true')
 
@@ -87,11 +93,33 @@ def parse_args():
                         default = 1e-5,
                         help='learning rate')
 
+    parser.add_argument('--warmup_steps', 
+                            type=int,
+                            default = 318,
+                            help='warmup steps in linear warmup with cosine anneal schedule')
+    
+    parser.add_argument('--total_steps', 
+                            type=int,
+                            default = 636,
+                            help='total number of steps in linear warmup with cosine anneal schedule')
+    
+    parser.add_argument('--cycles', 
+                            type=float,
+                            default = 0.5,
+                            help='cosine decay cycles')
+
     parser.add_argument('--num_workers', 
                         type=int,
                         default = 8,
                         help='number of cpu workers for dataloading')
+    
+    # evaluation args
+    parser.add_argument('--eval_split', type=str, default='minival', choices=['minitest', 'test', 'val', 'minival'])
 
+    parser.add_argument('--eval_checkpoint_name', type=str, default='')
+
+    parser.add_argument('--result_filename', type=str, default='')
+    
     args = parser.parse_args()
 
     return args

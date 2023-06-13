@@ -3,13 +3,15 @@ from rouge import Rouge
 from nltk.translate.bleu_score import sentence_bleu
 from sentence_transformers import util
 import random
+from torchmetrics import Metric
+import torch
+import pdb
 
 ## Evaluation helper functions
 
 def create_result_dict(result_list, qids):
     return dict([(qids[i], result_list[i]) \
                            for i in range(len(result_list))])
-
 
 def extract_explanation(text):
     text = re.sub(r"The answer is [A-Z]. BECAUSE: ", "", text)
@@ -33,6 +35,53 @@ def get_pred_idx(prediction, choices, options):
         return options.index(prediction)
     
     return random.choice(range(len(choices)))
+
+
+def get_answer_pair(preds, qids, problem_list, options):
+    
+    target = []
+    predicted = []
+    for i in range(len(preds)):
+        pred_idx = get_pred_idx(extract_answer(preds[i]), \
+                                             problem_list[qids[i]]["choices"], options = options)
+        predicted.append(pred_idx)
+        
+        target_idx = problem_list[qids[i]]["answer"]
+        target.append(target_idx)
+    
+    return torch.tensor(predicted), torch.tensor(target)
+
+
+def get_explanation_pair(preds, qids, problem_list):
+    
+    target = []
+    predicted = []
+    for i in range(len(preds)):
+        pred_exp = extract_explanation(preds[i])
+        predicted.append(pred_exp)
+        
+        target_exp = problem_list[qids[i]]["solution"].strip()
+        target.append(target_exp)
+    
+    return predicted, target
+
+
+def calculate_rouge(results, data): # expects results to be dictionary
+    rouges = []
+    for qid, output in results.items():
+        prediction = extract_explanation(output)
+        target = data[qid]["solution"]
+        target = target.strip()
+        if prediction == "":
+            continue
+        if target == "":
+            continue
+        rouge = score_rouge(target, prediction)
+        rouges.append(rouge)
+
+    avg_rouge = sum(rouges) / len(rouges)
+    return avg_rouge
+
 
 ########################
 ## BLEU
@@ -101,6 +150,41 @@ def calculate_rouge(results, data): # expects results to be dictionary
     return avg_rouge
 
 
+class RougeScore(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("lcs", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+
+    def _input_format(self, preds, target):
+        assert type(preds) == list
+        assert type(target) == list
+        return preds, target
+
+    def update(self, preds: list, target: list):
+        preds, target = self._input_format(preds, target)
+        assert len(preds) == len(target)
+
+        temp_list = []
+        for i in range(len(preds)):
+            if preds[i]=="" or target[i]=="":
+                continue
+            temp_list.append(score_rouge(preds[i],target[i]))
+
+        # print(type(sum(temp_list)))
+        # print(torch.tensor(sum(temp_list), dtype=torch.float).dtype)
+        # print(type(len(preds)))
+        # print(torch.tensor(len(preds), dtype=torch.float).dtype)
+        # print(self.lcs.dtype)
+        # print(self.total.dtype)
+        # breakpoint()
+        self.lcs += torch.tensor(sum(temp_list), dtype=torch.float)
+        self.total += torch.tensor(len(temp_list))
+
+    def compute(self):
+        return self.lcs / self.total
+
 ########################
 ## Sentence Similarity
 ########################
@@ -145,3 +229,24 @@ def calculate_acc(results, data, options=None):
 
     avg_acc = sum(acc) / len(acc)
     return avg_acc
+
+class Accuracy(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("correct", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def _input_format(self, preds, target):
+        assert type(preds) == torch.Tensor
+        assert type(target) == torch.Tensor
+        return preds, target
+    
+    def update(self, preds: torch.Tensor, target: torch.Tensor):
+        preds, target = self._input_format(preds, target)
+        assert preds.shape == target.shape
+
+        self.correct += torch.sum(preds == target)
+        self.total += target.numel()
+
+    def compute(self):
+        return self.correct.float() / self.total
