@@ -133,10 +133,13 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
-1-> Training loop
-2-> lr scheduler
-3-> dataset
-
+-> rouge score corner case
+-> accuracy corner case
+-> correct dataset
+-> old dataset new layout
+-> new dataset method
+-> better result analyzer
+-> ealry stopping based on val accuracy
 
 
 Tasks-1:

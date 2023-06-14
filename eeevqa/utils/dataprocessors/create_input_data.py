@@ -52,6 +52,7 @@ def create_lecture_tag():
     lecture_tag = "<p>{lecture_content}</p>"
     return lecture_tag
 
+# deprecated will be removed in the future
 def create_html_template_modular():
     html_template = \
         '''
@@ -75,7 +76,7 @@ def create_html_template_modular_v2(tags=[]):
 
     return html_template
 
-def create_html_file_modular(params, df, tags=[], sample_num=None):
+def create_html_file_modular(params, df, sample_num=None, html_type=1):
 
     # create individual tags
     
@@ -115,14 +116,23 @@ def create_html_file_modular(params, df, tags=[], sample_num=None):
         lecture_tag = ""
     
     # compose tags to html
-    print(create_html_template_modular_v2(tags))
-    return 
-    final_html_file = create_html_template_modular().format(question_tag = question_tag, choice_tag = choice_tag, \
+    if html_type==1: # QM I CL
+        tags = ["question_tag", "choice_tag", "img_tag", "context_tag", "lecture_tag"]
+        
+    elif html_type==2: # QM CL I
+        tags = ["question_tag", "choice_tag", "context_tag", "lecture_tag", "img_tag"]
+    
+    elif html_type==3: # QM I
+        tags = ["question_tag", "choice_tag", "img_tag"]
+    
+    
+    final_html_file = create_html_template_modular_v2(tags).format(question_tag = question_tag, choice_tag = choice_tag, \
                                           img_tag = img_tag, context_tag = context_tag, \
                                           lecture_tag = lecture_tag)
     
     return final_html_file
 
+#deprecated will be removed in the future
 def create_html_file(html_template, df, sample_num=None):
 
     # Image source
@@ -229,42 +239,31 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
             os.remove(f"{tmp_hpi_filename}.pdf")
 
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None):
+def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None):
     
     # header text
     header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
-
-    text_context =  problem_list[sample_num]["hint"] 
-    lecture =  problem_list[sample_num]["lecture"] 
     
     #input
-    pil_to_tensor_transform = transforms.Compose([
-    transforms.PILToTensor()
-    ])
-    with Image.open(f"{img_filename}.jpg") as img:
-        image = pil_to_tensor_transform(img)
-        image_mean = 0
-        image_std = 0
-        if preprocess_image is not None:
-            image, image_mean, image_std = preprocess_image(image)
-
+    image = Image.open(f"{img_filename}.jpg")
+    image_mean = 0
+    image_std = 0
+    if preprocess_image is not None:
+        image, image_mean, image_std = preprocess_image(image)
+    
     # Outputs
     if output_format == 'A':
-        output = f"Answer: The answer is {problem_list[sample_num]['answer']}."
+        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
     elif output_format == 'AE':
-        output = f"Answer: The answer is {problem_list[sample_num]['answer']}. BECAUSE: {problem_list[sample_num]['solution']}"
+        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
     elif output_format == 'EA':
-        output = f"Answer: {problem_list[sample_num]['solution']} The answer is {problem_list[sample_num]['answer']}."
+        output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
 
     output = output.replace("  ", " ").strip()
     if output.endswith("BECAUSE:"):
         output = output.replace("BECAUSE:", "").strip()
     
-    if task_name == "univqa":
-        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
-    else:
-        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
-
+    scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
     return scienceqa_example
 
 def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_dir = "", output_format="AE", \
@@ -325,30 +324,28 @@ if __name__ == '__main__':
     skip_image_gen = parse_boolean(args.skip_image_gen)
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
 
-    create_html_file_modular(params, problem_list, tags=["question_tag","choice_tag","img_tag","context_tag","lecture_tag"], sample_num=1)
-
-    # if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
-    #     print("----- Creating Image Collection -----") 
-    #     convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
-    #                     save_dir=save_dir, sample_subset = args.sample_subset, 
-    #                     crop_padding = args.crop_padding, params = params)
+    if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
+        print("----- Creating Image Collection -----") 
+        convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
+                        save_dir=save_dir, sample_subset = args.sample_subset, 
+                        crop_padding = args.crop_padding, params = params)
     
-    # # create dataset
-    # print("----- Creating Dataset from Image Collection -----") 
-    # dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
-    #                   source=args.data_split, save_dir = os.path.join(args.data_root, 
-    #                   args.pickle_files_dir, args.data_type), 
-    #                   output_format=args.output_format,
-    #                   options = args.options, preprocess_image = None, 
-    #                   sample_subset = args.sample_subset,
-    #                   task_name = args.task_name
-    #                   ) 
+    # create dataset
+    print("----- Creating Dataset from Image Collection -----") 
+    dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
+                      source=args.data_split, save_dir = os.path.join(args.data_root, 
+                      args.pickle_files_dir, args.data_type), 
+                      output_format=args.output_format,
+                      options = args.options, preprocess_image = None, 
+                      sample_subset = args.sample_subset,
+                      task_name = args.task_name
+                      ) 
     
-    # # save dataset
-    # print("----- Saving created dataset -----") 
-    # save_dataset(
-    #     dataset,
-    #     save_dir = os.path.join(args.data_root,
-    #                   args.pickle_files_dir, args.data_type),
-    #     filename = f"{args.data_split}.pkl"
-    # )
+    # save dataset
+    print("----- Saving created dataset -----") 
+    save_dataset(
+        dataset,
+        save_dir = os.path.join(args.data_root,
+                      args.pickle_files_dir, args.data_type),
+        filename = f"{args.data_split}.pkl"
+    )

@@ -14,12 +14,22 @@ def create_result_dict(result_list, qids):
                            for i in range(len(result_list))])
 
 def extract_explanation(text):
-    text = re.sub(r"The answer is [A-Z]. BECAUSE: ", "", text)
-    return text
+    res_text = re.sub(r"The answer is [0-9]. BECAUSE: ", "", text)
+    # res_text = re.sub(r"The answer is [A-Z]. BECAUSE: ", "", text)
+    if len(res_text) == text:
+        res_text = res_text.split("BECAUSE:")
+        if len(res_text[0])==text:
+            return text
+        else:
+            return res_text[1].strip()
+    return res_text
 
 def extract_answer(output):
-    pattern = re.compile(r'The answer is ([A-Z]).')
+    # print(output)
+    pattern = re.compile(r'The answer is ([0-9]).')
+    # pattern = re.compile(r'The answer is ([A-Z]).')
     res = pattern.findall(output)
+    # print(res)
     
     if len(res) == 1:
         answer = res[0]  # 'A', 'B', ...
@@ -42,12 +52,22 @@ def get_answer_pair(preds, qids, problem_list, options):
     target = []
     predicted = []
     for i in range(len(preds)):
-        pred_idx = get_pred_idx(extract_answer(preds[i]), \
-                                             problem_list[qids[i]]["choices"], options = options)
-        predicted.append(pred_idx)
-        
         target_idx = problem_list[qids[i]]["answer"]
         target.append(target_idx)
+
+        pred_idx = extract_answer(preds[i])
+        if pred_idx == "FAILED":
+            pred_idx = (target_idx + 1) % len(problem_list[qids[i]]["choices"])
+        else:
+            pred_idx = int(pred_idx)
+
+        # print(pred_idx)
+        # pred_idx = get_pred_idx(extract_answer(preds[i]), \
+        #                                      problem_list[qids[i]]["choices"], options = options)
+
+        predicted.append(pred_idx)
+        
+        
     
     return torch.tensor(predicted), torch.tensor(target)
 
@@ -172,13 +192,6 @@ class RougeScore(Metric):
                 continue
             temp_list.append(score_rouge(preds[i],target[i]))
 
-        # print(type(sum(temp_list)))
-        # print(torch.tensor(sum(temp_list), dtype=torch.float).dtype)
-        # print(type(len(preds)))
-        # print(torch.tensor(len(preds), dtype=torch.float).dtype)
-        # print(self.lcs.dtype)
-        # print(self.total.dtype)
-        # breakpoint()
         self.lcs += torch.tensor(sum(temp_list), dtype=torch.float)
         self.total += torch.tensor(len(temp_list))
 
@@ -217,8 +230,11 @@ def calculate_similarity(results, data, model):
 def calculate_acc(results, data, options=None):
     acc = []
     for qid, output in results.items():
-        prediction = get_pred_idx(extract_answer(output), \
-                                             data[qid]["choices"], options = options)
+        prediction = extract_answer(output)
+        # print(prediction)
+        # print(type(prediction))
+        # prediction = get_pred_idx(extract_answer(output), \
+        #                                      data[qid]["choices"], options = options)
         target = data[qid]["answer"]
 
         if prediction == "":

@@ -128,7 +128,7 @@ class Pix2StructVanilla(LightningModule):
         scheduler = WarmupCosineSchedule(
             optimizer=optimizer, 
             warmup_steps=self.warmup_steps, 
-            t_total=self.total_steps, 
+            t_total=self.trainer.estimated_stepping_batches, 
             cycles = self.cycles
             )
         return {"optimizer":optimizer, "lr_scheduler":scheduler}
