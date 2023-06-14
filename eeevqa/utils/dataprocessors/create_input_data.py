@@ -333,9 +333,7 @@ if __name__ == '__main__':
 
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
-    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
-
-    create_html_file_modular(params, problem_list, tags=["question_tag","choice_tag","img_tag","context_tag","lecture_tag"], sample_num=1)
+    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, args.layout_type)
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
         print("----- Creating Image Collection -----") 
@@ -343,22 +341,23 @@ if __name__ == '__main__':
                         save_dir=save_dir, sample_subset = args.sample_subset, 
                         crop_padding = args.crop_padding, params = params)
     
-    # create dataset
-    print("----- Creating Dataset from Image Collection -----") 
-    dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
-                      source=args.data_split, save_dir = os.path.join(args.data_root, 
-                      args.pickle_files_dir, args.data_type), 
-                      output_format=args.output_format,
-                      options = args.options, preprocess_image = None, 
-                      sample_subset = args.sample_subset,
-                      task_name = args.task_name
-                      ) 
+    skip_dataset_gen = parse_boolean(args.skip_dataset_gen)
     
-    # save dataset
-    print("----- Saving created dataset -----") 
-    save_dataset(
-        dataset,
-        save_dir = os.path.join(args.data_root,
-                      args.pickle_files_dir, args.data_type),
-        filename = f"{args.data_split}.pkl"
-    )
+    if skip_image_gen == False:
+        # create dataset
+        print("----- Creating Dataset from Image Collection -----") 
+        dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
+                        source=args.data_split, save_dir = save_dir, 
+                        output_format=args.output_format,
+                        options = args.options, preprocess_image = None, 
+                        sample_subset = args.sample_subset,
+                        task_name = args.task_name
+                        ) 
+        
+        # save dataset
+        print("----- Saving created dataset -----") 
+        save_dataset(
+            dataset,
+            save_dir = save_dir,
+            filename = f"{args.data_split}.pkl"
+        )

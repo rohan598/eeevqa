@@ -19,6 +19,7 @@ def parse_args():
     parser.add_argument('--json_files_dir', type=str, default='scienceqa')
     parser.add_argument('--pickle_files_dir', type=str, default='new_data')
     parser.add_argument('--data_type', type=str, default='unimodal')
+    parser.add_argument('--layout_type', type=int, default=1)
     parser.add_argument('--captions_filename', type=str, default='captions.json')
     parser.add_argument('--problems_filename', type=str, default='problems.json')
     parser.add_argument('--pidsplits_filename', type=str, default='pid_splits.json')
@@ -33,6 +34,7 @@ def parse_args():
 
     # data generation args
     parser.add_argument('--skip_image_gen', type=str, default="True")
+    parser.add_argument('--skip_dataset_gen', type=str, default="True")
     parser.add_argument('--data_split', type=str, default='minitrain')
     parser.add_argument('--sample_subset', default=None)
     parser.add_argument('--crop_padding', type=int, default=30)

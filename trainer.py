@@ -53,7 +53,7 @@ if __name__ == '__main__':
         test_split = "tiny_test"
         log_every_n_steps = 1
 
-
+    pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, args.layout_type)
     sdm = ScienceQADataModule(
             model_name_or_path=args.base_model_name,
             max_new_tokens = args.max_new_tokens,
@@ -62,7 +62,7 @@ if __name__ == '__main__':
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
             processor = processor,
-            pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_type),
+            pickle_files_path = pickle_files_path,
             train_split =  train_split,
             val_split =  val_split,
             test_split =  test_split,
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     )
     wandb_logger = WandbLogger(
         project="mmvqa",
-        name = f"run_{args.data_type}_{train_split}_of_{args.output_format}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
+        name = f"run_{args.data_type}_lt{args.layout_type}_{train_split}_of_{args.output_format}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
         save_dir = args.output_root
     )
     lr_monitor = LearningRateMonitor(logging_interval='step')
