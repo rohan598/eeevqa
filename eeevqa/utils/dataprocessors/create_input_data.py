@@ -76,7 +76,7 @@ def create_html_template_modular_v2(tags=[]):
 
     return html_template
 
-def create_html_file_modular(params, df, sample_num=None, html_type=1):
+def create_html_file_modular(params, df, sample_num=None, layout_type=1):
 
     # create individual tags
     
@@ -116,13 +116,13 @@ def create_html_file_modular(params, df, sample_num=None, html_type=1):
         lecture_tag = ""
     
     # compose tags to html
-    if html_type==1: # QM I CL
+    if layout_type==1: # QM I CL
         tags = ["question_tag", "choice_tag", "img_tag", "context_tag", "lecture_tag"]
         
-    elif html_type==2: # QM CL I
+    elif layout_type==2: # QM CL I
         tags = ["question_tag", "choice_tag", "context_tag", "lecture_tag", "img_tag"]
     
-    elif html_type==3: # QM I
+    elif layout_type==3: # QM I
         tags = ["question_tag", "choice_tag", "img_tag"]
     
     
@@ -212,7 +212,7 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
     for sample_num in idx_list:
         
         # create html template
-        html_template = create_html_file_modular(params, problem_list, sample_num=sample_num)
+        html_template = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
         html_file = create_html_file(html_template, problem_list, sample_num)
         
         # save tmp html file
@@ -328,12 +328,13 @@ if __name__ == '__main__':
         "set_question_as_header": parse_boolean(args.set_question_as_header),
         "skip_text_context":parse_boolean(args.skip_text_context),
         "skip_lecture":parse_boolean(args.skip_lecture),
-        "options":args.options
+        "options":args.options,
+        "layout_type":args.layout_type
     }
 
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
-    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, args.layout_type)
+    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, str(args.layout_type))
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
         print("----- Creating Image Collection -----") 
