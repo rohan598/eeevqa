@@ -22,6 +22,7 @@ class Pix2StructVanilla(LightningModule):
             processor:Callable = None,
             learning_rate: float = 1e-5,
             adam_epsilon: float = 1e-8,
+            max_new_tokens: int = 512,
             train_batch_size: int = 2,
             eval_batch_size: int = 2,
             output_format:str = "AE",
@@ -39,8 +40,7 @@ class Pix2StructVanilla(LightningModule):
 
         self.processor = processor
         self.model = Pix2StructForConditionalGeneration.from_pretrained(model_name_or_path)
-        # self.accuracy_metric = calculate_acc
-        # self.rouge_metric = calculate_rouge
+        self.max_new_tokens = max_new_tokens
         self.train_accuracy_metric = Accuracy()
         self.train_rouge_metric = RougeScore()
         self.val_accuracy_metric = Accuracy()
@@ -52,8 +52,6 @@ class Pix2StructVanilla(LightningModule):
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
         self.cycles = cycles
-        # self.training_step_outputs = []
-        # self.validation_step_outputs = []
         self.save_hyperparameters()
 
     def forward(self, **inputs):
@@ -65,13 +63,12 @@ class Pix2StructVanilla(LightningModule):
         outputs = self(**batch)
         loss = outputs[0]
 
-
+        qids = batch.pop('sample_num')
         flattened_patches = batch.pop("flattened_patches")
         attention_mask = batch.pop("attention_mask")
-        predictions = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask)  
-        text_predictions = self.processor.batch_decode(predictions, skip_special_tokens=True)
 
-        qids = batch.pop('sample_num')
+        generated_ids = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask, max_new_tokens=self.max_new_tokens)  
+        text_predictions = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
 
         self.log("train_loss", loss, on_step=True, on_epoch=True, sync_dist=True, batch_size = self.train_batch_size)
 
@@ -97,12 +94,13 @@ class Pix2StructVanilla(LightningModule):
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         outputs = self(**batch)
         val_loss = outputs[0]
+        
+        qids = batch.pop('sample_num')
         flattened_patches = batch.pop("flattened_patches")
         attention_mask = batch.pop("attention_mask")
-        predictions = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask)  
-        text_predictions = self.processor.batch_decode(predictions, skip_special_tokens=True)
 
-        qids = batch.pop('sample_num')
+        generated_ids = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask, max_new_tokens=self.max_new_tokens)  
+        text_predictions = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
 
         self.log("val_loss", val_loss, on_step=True, on_epoch=True, sync_dist=True, batch_size = self.eval_batch_size)
 
@@ -136,82 +134,3 @@ class Pix2StructVanilla(LightningModule):
         return {"optimizer":optimizer, "lr_scheduler":scheduler}
         # return [optimizer], []
     
-
-    ## archive code
-
-    # def forward(self, **inputs):
-    #     return self.model(**inputs)
-    
-    # def training_step(self, batch, batch_idx):
-    #     outputs = self(**batch)
-    #     loss = outputs[0]
-
-
-    #     flattened_patches = batch.pop("flattened_patches")
-    #     attention_mask = batch.pop("attention_mask")
-    #     predictions = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask)  
-    #     text_predictions = self.processor.batch_decode(predictions, skip_special_tokens=True)
-
-    #     qids = batch.pop('sample_num')
-    #     # print(type(qids))
-    #     # print(len(qids))
-    #     # result_dict = create_result_dict(text_predictions, qids)
-
-    #     outputs = {"loss": loss, "qids":qids , "preds":text_predictions}
-    #     self.training_step_outputs.append(outputs)
-    #     self.log("train_per_step_loss", loss, sync_dist=True, batch_size = self.train_batch_size)
-
-    #     return loss
-    
-    # def on_train_epoch_end(self):
-    #     preds = [x["preds"] for x in self.training_step_outputs]
-    #     preds = reduce(lambda x, y : x + y, preds)
-    #     qids = [x["qids"] for x in self.training_step_outputs] 
-    #     qids = reduce(lambda x, y : x + y, qids)
-    #     result_dict = create_result_dict(preds, qids)
-    #     loss = [x["loss"] for x in self.training_step_outputs]
-    #     loss = reduce(lambda x, y : x + y, loss)
-
-    #     self.log("train_loss", loss, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
-    #     self.log("train_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
-
-    #     if self.output_format != "A":
-    #         self.log("train_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
-
-    #     self.training_step_outputs.clear()
-
-
-    # def validation_step(self, batch, batch_idx, dataloader_idx=0):
-    #     outputs = self(**batch)
-    #     val_loss = outputs[0]
-    #     flattened_patches = batch.pop("flattened_patches")
-    #     attention_mask = batch.pop("attention_mask")
-    #     predictions = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask)  
-    #     text_predictions = self.processor.batch_decode(predictions, skip_special_tokens=True)
-
-    #     qids = batch.pop('sample_num')
-
-    #     outputs = {"loss": val_loss, "qids":qids , "preds":text_predictions}
-    #     self.validation_step_outputs.append(outputs)
-
-    #     self.log("val_per_step_loss", val_loss, sync_dist=True, batch_size = self.eval_batch_size)
-
-    #     return outputs
-    
-    # def on_validation_epoch_end(self):
-    #     preds = [x["preds"] for x in self.validation_step_outputs]
-    #     preds = reduce(lambda x, y : x + y, preds)
-    #     qids = [x["qids"] for x in self.validation_step_outputs] 
-    #     qids = reduce(lambda x, y : x + y, qids)
-    #     result_dict = create_result_dict(preds, qids)
-    #     loss = [x["loss"] for x in self.validation_step_outputs]
-    #     loss = reduce(lambda x, y : x + y, loss)
-
-    #     self.log("val_loss", loss, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
-    #     self.log("val_acc",self.accuracy_metric(result_dict, self.problem_list, self.options), prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
-        
-    #     if self.output_format != "A":
-    #         self.log("val_rouge",self.rouge_metric(result_dict, self.problem_list), prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
-
-    #     self.validation_step_outputs.clear()
-        

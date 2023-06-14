@@ -65,7 +65,7 @@ def parse_args():
                         default=1024,
                         help='The maximum number of img patches allowed.')
     
-    parser.add_argument('--max_tokens',
+    parser.add_argument('--max_new_tokens',
                         type=int,
                         default=512,
                         help='The maximum number of tokens allowed for the generated answer.')

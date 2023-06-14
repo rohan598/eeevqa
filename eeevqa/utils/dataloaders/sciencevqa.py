@@ -19,6 +19,7 @@ class VQADataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.dataset[idx]
+
         encoding = self.processor(images=item.image, return_tensors="pt", add_special_tokens=True, max_patches=self.max_patches)
         
         encoding = {k:v.squeeze() for k,v in encoding.items()}
@@ -89,7 +90,7 @@ class ScienceQADataModule(LightningDataModule):
             self,
             model_name_or_path:str,
             task_name: str = "univqa",
-            max_seq_length:int = 512,
+            max_new_tokens:int = 512,
             max_patches:int = 1024,
             output_format:str = "AE",
             train_batch_size:int = 1,
@@ -105,7 +106,7 @@ class ScienceQADataModule(LightningDataModule):
         super().__init__()
         self.model_name_or_path = model_name_or_path
         self.task_name = task_name
-        self.max_seq_length = max_seq_length
+        self.max_new_tokens = max_new_tokens
         self.max_patches = max_patches
         self.output_format = output_format
         self.train_batch_size = train_batch_size
@@ -130,8 +131,7 @@ class ScienceQADataModule(LightningDataModule):
     def collator(self, batch):
         new_batch = {"flattened_patches":[], "attention_mask":[]}
         texts = [item["text"] for item in batch]
-
-        text_inputs = self.processor(text=texts, padding="max_length", truncation=True, return_tensors="pt", add_special_tokens=True, max_length=self.max_seq_length)
+        text_inputs = self.processor(text=texts, padding=True, truncation=True, return_tensors="pt", add_special_tokens=True, max_length=self.max_new_tokens)
 
         new_batch["labels"] = text_inputs.input_ids
 

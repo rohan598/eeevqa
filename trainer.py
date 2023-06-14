@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     sdm = ScienceQADataModule(
             model_name_or_path=args.base_model_name,
-            max_seq_length = args.max_tokens,
+            max_new_tokens = args.max_new_tokens,
             max_patches = args.max_patches,
             output_format=args.output_format,
             train_batch_size = args.train_batch_size,
@@ -80,6 +80,7 @@ if __name__ == '__main__':
             processor=processor,
             learning_rate = args.learning_rate,
             adam_epsilon = 1e-8,
+            max_new_tokens = args.max_new_tokens,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
             output_format=args.output_format,
