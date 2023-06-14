@@ -239,18 +239,25 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
             os.remove(f"{tmp_hpi_filename}.pdf")
 
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None):
+def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None):
     
     # header text
     header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
+
+    text_context =  problem_list[sample_num]["hint"] 
+    lecture =  problem_list[sample_num]["lecture"] 
     
     #input
-    image = Image.open(f"{img_filename}.jpg")
-    image_mean = 0
-    image_std = 0
-    if preprocess_image is not None:
-        image, image_mean, image_std = preprocess_image(image)
-    
+    pil_to_tensor_transform = transforms.Compose([
+    transforms.PILToTensor()
+    ])
+    with Image.open(f"{img_filename}.jpg") as img:
+        image = pil_to_tensor_transform(img)
+        image_mean = 0
+        image_std = 0
+        if preprocess_image is not None:
+            image, image_mean, image_std = preprocess_image(image)
+
     # Outputs
     if output_format == 'A':
         output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
@@ -263,7 +270,11 @@ def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, ou
     if output.endswith("BECAUSE:"):
         output = output.replace("BECAUSE:", "").strip()
     
-    scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
+    if task_name == "univqa":
+        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
+    else:
+        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
+
     return scienceqa_example
 
 def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_dir = "", output_format="AE", \
@@ -323,6 +334,8 @@ if __name__ == '__main__':
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type)
+
+    create_html_file_modular(params, problem_list, tags=["question_tag","choice_tag","img_tag","context_tag","lecture_tag"], sample_num=1)
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
         print("----- Creating Image Collection -----") 

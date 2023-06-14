@@ -66,8 +66,6 @@ def get_answer_pair(preds, qids, problem_list, options):
         #                                      problem_list[qids[i]]["choices"], options = options)
 
         predicted.append(pred_idx)
-        
-        
     
     return torch.tensor(predicted), torch.tensor(target)
 

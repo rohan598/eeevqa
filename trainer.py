@@ -136,6 +136,7 @@ Corrections:
 -> rouge score corner case
 -> accuracy corner case
 -> correct dataset
+-> learning rate on steps
 -> old dataset new layout
 -> new dataset method
 -> better result analyzer
