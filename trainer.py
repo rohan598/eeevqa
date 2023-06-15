@@ -25,7 +25,6 @@ if __name__ == '__main__':
 
     print("----- Parsed Arguments -----")
     args = parse_args()
-    print(args.output_format)
 
     print("----- Read Dataset -----") 
     if args.task_name == "univqa":
@@ -51,7 +50,6 @@ if __name__ == '__main__':
         train_split = "tiny_train" 
         val_split = "tiny_val"
         test_split = "tiny_test"
-        log_every_n_steps = 1
 
     pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, str(args.layout_type))
     sdm = ScienceQADataModule(
@@ -133,11 +131,12 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
--> old dataset new layout
-
 -> better result analyzer
 -> ealry stopping based on val accuracy
 -> new dataset method
 
-
+-> github issue tracking
+-> zero gpu node logging only
+-> cross attention method
+-> hydra template
 '''

@@ -54,7 +54,7 @@ def parse_args():
 
     parser.add_argument('--log_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
 
-    parser.add_argument('--log_every_n_steps', type=int, default=50, help='model checkpoint with every n epochs.')
+    parser.add_argument('--log_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
 
     parser.add_argument('--debug', action='store_true')
 

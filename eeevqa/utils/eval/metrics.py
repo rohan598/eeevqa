@@ -1,6 +1,5 @@
 import re
 from rouge import Rouge
-from nltk.translate.bleu_score import sentence_bleu
 from sentence_transformers import util
 import random
 from torchmetrics import Metric
@@ -89,48 +88,6 @@ def calculate_rouge(results, data): # expects results to be dictionary
     avg_rouge = sum(rouges) / len(rouges)
     return avg_rouge
 
-
-########################
-## BLEU
-########################
-def tokenize(text):
-    tokens = re.split(r'\s|\.', text)
-    tokens = [t for t in tokens if len(t) > 0]
-    return tokens
-
-
-def bleu_score(reference, hypothesis, gram):
-    reference_tokens = tokenize(reference)
-    hypothesis_tokens = tokenize(hypothesis)
-
-    if gram == 1:
-        bleu = sentence_bleu([reference_tokens], hypothesis_tokens, (1., ))  # BELU-1
-    elif gram == 2:
-        bleu = sentence_bleu([reference_tokens], hypothesis_tokens, (1. / 2., 1. / 2.))  # BELU-2
-    elif gram == 3:
-        bleu = sentence_bleu([reference_tokens], hypothesis_tokens, (1. / 3., 1. / 3., 1. / 3.))  # BELU-3
-    elif gram == 4:
-        bleu = sentence_bleu([reference_tokens], hypothesis_tokens, (1. / 4., 1. / 4., 1. / 4., 1. / 4.))  # BELU-4
-
-    return bleu
-
-
-def calculate_bleu(results, data, gram):
-    bleus = []
-    for qid, output in results.items():
-        prediction = extract_explanation(output)
-        target = data[qid]["lecture"] + " " + data[qid]["solution"]
-        target = target.strip()
-        if target == "":
-            continue
-        bleu = bleu_score(target, prediction, gram)
-        bleus.append(bleu)
-
-    avg_bleu = sum(bleus) / len(bleus)
-
-    return avg_bleu
-
-
 ########################
 ## Rouge-L
 ########################
@@ -178,7 +135,7 @@ class RougeScore(Metric):
             if preds[i]=="" or target[i]=="":
                 continue
             tmp_str = str(preds[i][0])
-            if tmp_str.isalnum() == False:
+            if tmp_str.isalnum() == False: # hack to avoid strings starting with symbols which are interpreted as empty
                 preds[i]='a'+preds[i][1:]
             
             temp_list.append(score_rouge(preds[i],target[i]))
