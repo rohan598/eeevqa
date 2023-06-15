@@ -80,7 +80,7 @@ class Pix2StructVanilla(LightningModule):
 
         if self.output_format != "A":
             explanation_predicted, explanation_target = get_explanation_pair(text_predictions, qids, self.problem_list)
-
+            
             self.train_rouge_metric.update(explanation_predicted, explanation_target)
 
             self.log("train_rouge", self.train_rouge_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)

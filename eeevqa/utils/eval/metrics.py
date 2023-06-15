@@ -26,7 +26,6 @@ def extract_explanation(text):
 def extract_answer(output):
     pattern = re.compile(r'The answer is ([A-Z]).')
     res = pattern.findall(output)
-    print(res)
     
     if len(res) == 1:
         answer = res[0]  # 'A', 'B', ...
@@ -176,6 +175,9 @@ class RougeScore(Metric):
 
         temp_list = []
         for i in range(len(preds)):
+            tmp_str = str(preds[i][0])
+            if tmp_str.isalnum() == False:
+                preds[i]='a'+preds[i][1:]
             if preds[i]=="" or target[i]=="":
                 continue
             temp_list.append(score_rouge(preds[i],target[i]))
