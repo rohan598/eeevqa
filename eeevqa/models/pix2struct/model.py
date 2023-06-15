@@ -27,7 +27,7 @@ class Pix2StructVanilla(LightningModule):
             eval_batch_size: int = 2,
             output_format:str = "AE",
             warmup_steps:int = 318,
-            total_steps:int = 636,
+            # total_steps:int = 636,
             cycles:float = 0.5,
             **kwargs,
     ):
@@ -50,7 +50,7 @@ class Pix2StructVanilla(LightningModule):
         self.eval_batch_size = eval_batch_size
         self.learning_rate = learning_rate
         self.warmup_steps = warmup_steps
-        self.total_steps = total_steps
+        # self.total_steps = total_steps
         self.cycles = cycles
         self.save_hyperparameters()
 
@@ -130,7 +130,17 @@ class Pix2StructVanilla(LightningModule):
             warmup_steps=self.warmup_steps, 
             t_total=self.trainer.estimated_stepping_batches, 
             cycles = self.cycles
-            )
-        return {"optimizer":optimizer, "lr_scheduler":scheduler}
-        # return [optimizer], []
+        )
+        
+        return (
+            [optimizer], 
+            [
+                {
+                'scheduler': scheduler,
+                'interval': 'step',
+                'frequency': 1,
+                'reduce_on_plateau': False,
+                }
+            ]
+        )
     

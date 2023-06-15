@@ -14,8 +14,7 @@ def create_result_dict(result_list, qids):
                            for i in range(len(result_list))])
 
 def extract_explanation(text):
-    res_text = re.sub(r"The answer is [0-9]. BECAUSE: ", "", text)
-    # res_text = re.sub(r"The answer is [A-Z]. BECAUSE: ", "", text)
+    res_text = re.sub(r"The answer is [A-Z]. BECAUSE: ", "", text)
     if len(res_text) == text:
         res_text = res_text.split("BECAUSE:")
         if len(res_text[0])==text:
@@ -25,11 +24,9 @@ def extract_explanation(text):
     return res_text
 
 def extract_answer(output):
-    # print(output)
-    pattern = re.compile(r'The answer is ([0-9]).')
-    # pattern = re.compile(r'The answer is ([A-Z]).')
+    pattern = re.compile(r'The answer is ([A-Z]).')
     res = pattern.findall(output)
-    # print(res)
+    print(res)
     
     if len(res) == 1:
         answer = res[0]  # 'A', 'B', ...
@@ -55,16 +52,9 @@ def get_answer_pair(preds, qids, problem_list, options):
         target_idx = problem_list[qids[i]]["answer"]
         target.append(target_idx)
 
-        pred_idx = extract_answer(preds[i])
-        if pred_idx == "FAILED":
-            pred_idx = (target_idx + 1) % len(problem_list[qids[i]]["choices"])
-        else:
-            pred_idx = int(pred_idx)
 
-        # print(pred_idx)
-        # pred_idx = get_pred_idx(extract_answer(preds[i]), \
-        #                                      problem_list[qids[i]]["choices"], options = options)
-
+        pred_idx = get_pred_idx(extract_answer(preds[i]), \
+                                             problem_list[qids[i]]["choices"], options = options)
         predicted.append(pred_idx)
     
     return torch.tensor(predicted), torch.tensor(target)
@@ -228,11 +218,8 @@ def calculate_similarity(results, data, model):
 def calculate_acc(results, data, options=None):
     acc = []
     for qid, output in results.items():
-        prediction = extract_answer(output)
-        # print(prediction)
-        # print(type(prediction))
-        # prediction = get_pred_idx(extract_answer(output), \
-        #                                      data[qid]["choices"], options = options)
+        prediction = get_pred_idx(extract_answer(output), \
+                                             data[qid]["choices"], options = options)
         target = data[qid]["answer"]
 
         if prediction == "":

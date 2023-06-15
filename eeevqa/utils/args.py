@@ -97,13 +97,13 @@ def parse_args():
 
     parser.add_argument('--warmup_steps', 
                             type=int,
-                            default = 3,
+                            default = 10,
                             help='warmup steps in linear warmup with cosine anneal schedule')
     
-    parser.add_argument('--total_steps', 
-                            type=int,
-                            default = 10,
-                            help='total number of steps in linear warmup with cosine anneal schedule')
+    # parser.add_argument('--total_steps', 
+    #                         type=int,
+    #                         default = 10,
+    #                         help='total number of steps in linear warmup with cosine anneal schedule')
     
     parser.add_argument('--cycles', 
                             type=float,

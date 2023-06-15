@@ -155,7 +155,7 @@ if __name__ == '__main__':
             eval_batch_size = args.eval_batch_size,
             output_format=args.output_format,
             warmup_steps = args.warmup_steps,
-            total_steps = args.total_steps,
+            # total_steps = args.total_steps,
             cycles = args.cycles
     )
 

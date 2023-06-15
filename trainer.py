@@ -85,7 +85,7 @@ if __name__ == '__main__':
             eval_batch_size = args.eval_batch_size,
             output_format=args.output_format,
             warmup_steps = args.warmup_steps,
-            total_steps = args.total_steps,
+            # total_steps = args.total_steps,
             cycles = args.cycles
     )
 
@@ -133,31 +133,12 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
--> rouge score corner case
--> accuracy corner case
--> correct dataset
 -> learning rate on steps
 -> old dataset new layout
--> new dataset method
+
 -> better result analyzer
 -> ealry stopping based on val accuracy
-
-
-Tasks-1:
-
-1-> create new data generator using just PIL
-2-> create three types of data
-    -> QMICL
-    -> QMCLI
-    -> QMI
-3-> Correct the learning rate issue
-4-> Make a better data visualizer
-5-> Run experiments on these three variants
-
-6-> Start work on multimodal approach
-    -> See how you can combine the two models
-7-> Setup trainer for this
-8-> Run stage-1 training for this 
+-> new dataset method
 
 
 '''
