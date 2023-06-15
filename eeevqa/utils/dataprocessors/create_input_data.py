@@ -344,7 +344,7 @@ if __name__ == '__main__':
     
     skip_dataset_gen = parse_boolean(args.skip_dataset_gen)
     
-    if skip_image_gen == False:
+    if skip_dataset_gen == False:
         # create dataset
         print("----- Creating Dataset from Image Collection -----") 
         dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 

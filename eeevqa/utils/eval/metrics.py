@@ -175,11 +175,12 @@ class RougeScore(Metric):
 
         temp_list = []
         for i in range(len(preds)):
+            if preds[i]=="" or target[i]=="":
+                continue
             tmp_str = str(preds[i][0])
             if tmp_str.isalnum() == False:
                 preds[i]='a'+preds[i][1:]
-            if preds[i]=="" or target[i]=="":
-                continue
+            
             temp_list.append(score_rouge(preds[i],target[i]))
 
         self.lcs += torch.tensor(sum(temp_list), dtype=torch.float)

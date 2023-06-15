@@ -33,8 +33,8 @@ def parse_args():
 
 
     # data generation args
-    parser.add_argument('--skip_image_gen', type=str, default="True")
-    parser.add_argument('--skip_dataset_gen', type=str, default="True")
+    parser.add_argument('--skip_image_gen', type=str, default="False")
+    parser.add_argument('--skip_dataset_gen', type=str, default="False")
     parser.add_argument('--data_split', type=str, default='minitrain')
     parser.add_argument('--sample_subset', default=None)
     parser.add_argument('--crop_padding', type=int, default=30)

@@ -133,7 +133,6 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
--> learning rate on steps
 -> old dataset new layout
 
 -> better result analyzer
