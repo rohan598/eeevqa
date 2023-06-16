@@ -6,6 +6,7 @@ from datetime import datetime
 
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from pytorch_lightning.loggers import WandbLogger
 import torch
@@ -87,9 +88,12 @@ if __name__ == '__main__':
             cycles = args.cycles
     )
     print("----- Lightning Model Setup -----")
+    checkpoint_dir = os.path.join(args.output_root, args.checkpoint_dir, args.data_version, args.data_type, str(args.layout_type))
+    if os.path.exists(checkpoint_dir)==False:
+        os.makedirs(checkpoint_dir)
 
     checkpoint_callback = ModelCheckpoint(
-            dirpath=os.path.join(args.output_root, args.checkpoint_dir),
+            dirpath= checkpoint_dir,
             filename='{epoch}-{val_loss:.2f}-{val_acc:.2f}',
             monitor='val_acc',
             mode = "max",
@@ -103,6 +107,8 @@ if __name__ == '__main__':
         save_dir = args.output_root
     )
     lr_monitor = LearningRateMonitor(logging_interval='step')
+
+    early_stopping = EarlyStopping(monitor=args.es_monitor, min_delta=args.es_min_delta, patience=args.es_patience, verbose=False, mode=args.es_mode)
     print("----- Model Callbacks Setup -----")
 
     if platform == "darwin":
@@ -120,7 +126,7 @@ if __name__ == '__main__':
             accelerator="gpu",
             devices=args.gpu_cnt if torch.cuda.is_available() else None,
             strategy="ddp",  
-            callbacks=[checkpoint_callback, lr_monitor],
+            callbacks=[checkpoint_callback, lr_monitor, early_stopping],
             logger = wandb_logger,
             log_every_n_steps = log_every_n_steps
         )
@@ -132,10 +138,9 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
--> better result analyzer
 -> ealry stopping based on val accuracy
--> new dataset method
 
+-> new dataset method
 -> github issue tracking
 -> zero gpu node logging only
 -> cross attention method

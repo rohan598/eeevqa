@@ -57,6 +57,14 @@ def parse_args():
 
     parser.add_argument('--log_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
 
+    parser.add_argument('--es_monitor', type=str, default="val_acc", help='Early stopping monitor metric')
+
+    parser.add_argument('--es_mode', type=str, default="max", help='Early stopping monitor metric comparison')
+    
+    parser.add_argument('--es_delta', type=float, default=0.0, help='Early stopping monitor metric minimum required change')
+
+    parser.add_argument('--es_patience', type=int, default=3, help='Early stopping monitor metric max epochs without improvement')
+
     parser.add_argument('--debug', action='store_true')
 
     parser.add_argument('--dummy_run', type=str, default='no', choices=['yes', 'no'])

@@ -23,11 +23,12 @@ from eeevqa.utils.dataloaders.sciencevqa import create_eval_dataloader
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
 from eeevqa.utils.eval.metrics import get_pred_idx, extract_answer, extract_explanation
 
-def get_result_filepath(args, model_name):
-    result_filename = "{}_{}_{}_{}_{}_seed_{}.json".format(model_name, args.eval_split, args.output_format, args.max_patches, args.max_new_tokens, args.seed)
+def get_result_filepath(args, model_name, result_type):
+    result_filename = "{}_{}_{}_{}_{}_{}_seed_{}.json".format(result_type, model_name, args.eval_split, args.output_format, args.max_patches, args.max_new_tokens, args.seed)
 
     result_file_dir = os.path.join(args.output_root, 
-                                    args.results_dir, 
+                                    args.results_dir,
+                                    args.data_version,
                                     args.data_type,
                                     args.layout_type)
     
@@ -186,7 +187,7 @@ if __name__ == '__main__':
     )
 
     # load model
-    checkpoint_path = os.path.join(args.output_root, args.checkpoint_dir, args.eval_checkpoint_name)
+    checkpoint_path = os.path.join(args.output_root, args.checkpoint_dir, args.data_version, args.data_type, str(args.layout_type), args.eval_checkpoint_name)
     
     model = p2smodule.load_from_checkpoint(
         checkpoint_path=checkpoint_path,
@@ -203,14 +204,21 @@ if __name__ == '__main__':
     eval_dataloader = create_eval_dataloader(pickle_files_path, args.eval_split, processor, args.max_patches, args.output_format, batch_size) 
 
     model_name = model.__class__.__name__
-    result_filepath = get_result_filepath(args, model_name)
+    model_output_filepath = get_result_filepath(args, model_name, "model_output")
+    model_acc_scores_filepath = get_result_filepath(args, model_name, "model_acc_scores")
     
-    data = gen_results(model, eval_dataloader, problem_list, result_filepath)
-    print("----- Results Generated -----")
+    model_output = gen_results(model, eval_dataloader, problem_list, model_output_filepath)
+    print("----- Model Outputs Generated -----")
 
-    save_results(result_filepath, data)
-    print("----- Results Saved -----")
+    save_results(model_output_filepath, model_output)
+    print("----- Model Outputs Saved -----")
     
+    acc_scores = get_scores(model_output_filepath)
+    print("----- Model Accuracy Scores Generated -----")
+
+    save_results(model_acc_scores_filepath, acc_scores)
+    print("----- Model Accuracy Scores Saved -----")
+
 
     # # create trainer
     # trainer = Trainer(

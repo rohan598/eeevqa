@@ -51,6 +51,7 @@ class Pix2StructVanilla(LightningModule):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
         self.learning_rate = learning_rate
+        self.weight_decay = weight_decay
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
         self.cycles = cycles
