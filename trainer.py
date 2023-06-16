@@ -23,10 +23,9 @@ if __name__ == '__main__':
     seed_everything(42)
     torch.set_float32_matmul_precision('medium')
 
-    print("----- Parsed Arguments -----")
     args = parse_args()
+    print("----- Parsed Arguments -----")
 
-    print("----- Read Dataset -----") 
     if args.task_name == "univqa":
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
     else:
@@ -34,13 +33,14 @@ if __name__ == '__main__':
 
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+    print("----- Read Dataset -----") 
 
-    print("----- Setup Lightning Data Module -----")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = AutoProcessor.from_pretrained(args.base_model_name)
     if device=="cuda":
         processor.image_processor.convert_fp16 = True
-     
+    print("----- Lightning Data Module Setup -----")
+
     train_split =  args.train_split
     val_split =  args.val_split
     test_split =  args.test_split
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         val_split = "tiny_val"
         test_split = "tiny_test"
 
-    pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, str(args.layout_type))
+    pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
     sdm = ScienceQADataModule(
             model_name_or_path=args.base_model_name,
             max_new_tokens = args.max_new_tokens,
@@ -65,11 +65,10 @@ if __name__ == '__main__':
             val_split =  val_split,
             test_split =  test_split,
     )
-    
-    print("----- Fitting Lightning Data Module -----")
-    sdm.setup("fit")
 
-    print("----- Setup Lightning Model -----")
+    sdm.setup("fit")
+    print("----- Lightning Data Module Fitted -----")
+
     model = Pix2StructVanilla(
             model_name_or_path = args.base_model_name,
             problem_list = problem_list,
@@ -77,17 +76,18 @@ if __name__ == '__main__':
             task_name = args.task_name,
             processor=processor,
             learning_rate = args.learning_rate,
+            weight_decay=args.weight_decay,
             adam_epsilon = 1e-8,
             max_new_tokens = args.max_new_tokens,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
             output_format=args.output_format,
             warmup_steps = args.warmup_steps,
-            # total_steps = args.total_steps,
+            total_steps = args.total_steps,
             cycles = args.cycles
     )
+    print("----- Lightning Model Setup -----")
 
-    print("----- Setup Model Callbacks -----")
     checkpoint_callback = ModelCheckpoint(
             dirpath=os.path.join(args.output_root, args.checkpoint_dir),
             filename='{epoch}-{val_loss:.2f}-{val_acc:.2f}',
@@ -103,8 +103,8 @@ if __name__ == '__main__':
         save_dir = args.output_root
     )
     lr_monitor = LearningRateMonitor(logging_interval='step')
+    print("----- Model Callbacks Setup -----")
 
-    print("----- Setup and fit Trainer -----")
     if platform == "darwin":
         trainer = Trainer(
         max_epochs=5,
@@ -124,9 +124,10 @@ if __name__ == '__main__':
             logger = wandb_logger,
             log_every_n_steps = log_every_n_steps
         )
+    print("----- Trainer Setup -----")
 
     trainer.fit(model, datamodule=sdm)
-
+    print("----- Trainer Fitted -----")
 
 '''
 TODO:

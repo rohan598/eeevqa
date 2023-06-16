@@ -1,6 +1,7 @@
 from pytorch_lightning import LightningModule
 
 from transformers import Pix2StructForConditionalGeneration, AutoProcessor
+from transformers.optimization import Adafactor, get_cosine_schedule_with_warmup
 
 from collections.abc import Sequence, Callable
 
@@ -21,13 +22,14 @@ class Pix2StructVanilla(LightningModule):
             task_name: str = "mmvqa",
             processor:Callable = None,
             learning_rate: float = 1e-5,
+            weight_decay:float = 1e-5,
             adam_epsilon: float = 1e-8,
             max_new_tokens: int = 512,
             train_batch_size: int = 2,
             eval_batch_size: int = 2,
             output_format:str = "AE",
-            warmup_steps:int = 318,
-            # total_steps:int = 636,
+            warmup_steps:int = 1000,
+            total_steps:int = 10000,
             cycles:float = 0.5,
             **kwargs,
     ):
@@ -50,7 +52,7 @@ class Pix2StructVanilla(LightningModule):
         self.eval_batch_size = eval_batch_size
         self.learning_rate = learning_rate
         self.warmup_steps = warmup_steps
-        # self.total_steps = total_steps
+        self.total_steps = total_steps
         self.cycles = cycles
         self.save_hyperparameters()
 
@@ -124,23 +126,33 @@ class Pix2StructVanilla(LightningModule):
         """Prepare optimizer and schedule (linear warmup and decay)"""
 
         model = self.model
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        scheduler = WarmupCosineSchedule(
-            optimizer=optimizer, 
-            warmup_steps=self.warmup_steps, 
-            t_total=self.trainer.estimated_stepping_batches, 
-            cycles = self.cycles
-        )
+        optimizer = Adafactor(model.parameters(),
+                              scale_parameter=False, relative_step=False, 
+                              lr=self.learning_rate, weight_decay=self.weight_decay)
+
+        scheduler = get_cosine_schedule_with_warmup(optimizer,
+                                                    num_warmup_steps=self.warmup_steps, num_training_steps=self.total_steps)
+
+        return ([optimizer], [scheduler])
+
+        # model = self.model
+        # optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        # scheduler = WarmupCosineSchedule(
+        #     optimizer=optimizer, 
+        #     warmup_steps=self.warmup_steps, 
+        #     t_total=self.trainer.estimated_stepping_batches, 
+        #     cycles = self.cycles
+        # )
         
-        return (
-            [optimizer], 
-            [
-                {
-                'scheduler': scheduler,
-                'interval': 'step',
-                'frequency': 1,
-                'reduce_on_plateau': False,
-                }
-            ]
-        )
+        # return (
+        #     [optimizer], 
+        #     [
+        #         {
+        #         'scheduler': scheduler,
+        #         'interval': 'step',
+        #         'frequency': 1,
+        #         'reduce_on_plateau': False,
+        #         }
+        #     ]
+        # )
     

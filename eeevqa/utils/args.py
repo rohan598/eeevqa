@@ -16,6 +16,7 @@ def parse_args():
     # common args
     parser.add_argument('--task_name', type=str, default='univqa')
     parser.add_argument('--data_root', type=str, default='data')
+    parser.add_argument('--data_version', type=str, default='v1')
     parser.add_argument('--json_files_dir', type=str, default='scienceqa')
     parser.add_argument('--pickle_files_dir', type=str, default='new_data')
     parser.add_argument('--data_type', type=str, default='unimodal')
@@ -94,16 +95,21 @@ def parse_args():
                         type=float,
                         default = 1e-5,
                         help='learning rate')
+    
+    parser.add_argument('-wd', '--weight_decay', 
+                        type=float,
+                        default = 1e-5,
+                        help='weight decay')
 
     parser.add_argument('--warmup_steps', 
                             type=int,
-                            default = 10,
+                            default = 1000,
                             help='warmup steps in linear warmup with cosine anneal schedule')
     
-    # parser.add_argument('--total_steps', 
-    #                         type=int,
-    #                         default = 10,
-    #                         help='total number of steps in linear warmup with cosine anneal schedule')
+    parser.add_argument('--total_steps', 
+                            type=int,
+                            default = 10000,
+                            help='total number of steps in linear warmup with cosine anneal schedule')
     
     parser.add_argument('--cycles', 
                             type=float,
@@ -120,8 +126,8 @@ def parse_args():
 
     parser.add_argument('--eval_checkpoint_name', type=str, default='')
 
-    parser.add_argument('--result_filename', type=str, default='')
+    parser.add_argument('--results_dir', type=str, default='model_results')
     
     args = parser.parse_args()
 
-    return args
+    return args 

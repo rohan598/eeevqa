@@ -21,105 +21,131 @@ from eeevqa.utils.args import parse_args
 from eeevqa.utils.dataloaders.raw_data import read_problem_list
 from eeevqa.utils.dataloaders.sciencevqa import create_eval_dataloader
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
+from eeevqa.utils.eval.metrics import get_pred_idx, extract_answer, extract_explanation
 
-def save_results(result_file, outputs):
-    data = {}
-    # data['results'] = results
-    data['outputs'] = outputs
+def get_result_filepath(args, model_name):
+    result_filename = "{}_{}_{}_{}_{}_seed_{}.json".format(model_name, args.eval_split, args.output_format, args.max_patches, args.max_new_tokens, args.seed)
 
-    with open(result_file, 'w') as f:
+    result_file_dir = os.path.join(args.output_root, 
+                                    args.results_dir, 
+                                    args.data_type,
+                                    args.layout_type)
+    
+    if os.path.exists(result_file_dir) == False:
+           os.makedirs(result_file_dir)
+
+    result_filepath = os.path.join(result_file_dir, result_filename)
+    
+
+    return result_filepath
+
+def save_results(result_filepath, data):
+    with open(result_filepath, 'w') as f:
         json.dump(data, f, indent=2, separators=(',', ': '))
 
-def gen_results(model, eval_dataloader, problem_list, result_file):
-    # results = {}
-    outputs = {}
-    # correct = 0
-    # count = 0
+def gen_results(model, eval_dataloader, problem_list, args):
+    
+    data = {
+        "results":None,
+        "args":None
+    }
+    results = {}
     # iterator = iter(eval_dataloader)
     for data_sample in eval_dataloader:
 
         flattened_patches = data_sample.pop("flattened_patches")
         attention_mask = data_sample.pop("attention_mask")
         qid = data_sample.pop("sample_num")[0]
-        print(qid)
-        predictions = model.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask)  
+        # print(qid)
+        predictions = model.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask, max_new_tokens = args.max_new_tokens)  
         text_predictions = processor.batch_decode(predictions, skip_special_tokens=True)[0]
 
-        print(text_predictions)
-        # choices = problem_list[qid]["choices"]
-        # answer = problem_list[qid]["answer"]  # 0, 1, ..., 4 
+        # print(text_predictions)
+        choices = problem_list[qid]["choices"]
+        answer = problem_list[qid]["answer"]  # 0, 1, ..., 4 
+        options = args.options
 
-        # pred_answer = text_predictions.split(".")[0].split("The answer is ")[1].strip()
-        # if pred_answer in choices:
-        #     pred_answer = choices.index(pred_answer)
-
-        # pred_exp = text_predictions.split(".")[1]
-        # count+=1
+        pred_answer = get_pred_idx(
+             extract_answer(text_predictions), 
+             choices = choices, 
+             options = options)
         
-        # results[qid] = pred_answer
-        # outputs[qid] = pred_exp
- 
-        # if pred_answer == answer:
-        #     correct += 1
 
-    save_results(result_file, text_predictions)
+        pred_exp = extract_explanation(text_predictions)
+        results[qid] = {}
+
+        # TODO
+        # can make this more efficient convert to pd
+
+        results[qid]["pred_answer"] = pred_answer
+        results[qid]["pred_exp"] = pred_exp
+        results[qid]["no_context"] = True if (not problem_list[qid]["hint"] and not problem_list[qid]["image"]) else False
+        results[qid]["has_text"] = True if problem_list[qid]["hint"] else False
+        results[qid]["has_image"] = True if problem_list[qid]["image"] else False
+        results[qid]["has_text_image"] = True if (problem_list[qid]["hint"] and problem_list[qid]["image"]) else False
+        results[qid]["grade"] = problem_list[qid]["grade"]
+        results[qid]["answer"] = problem_list[qid]["answer"]
+        results[qid]["true_false"] = (problem_list[qid]["answer"] == results[qid]["pred_answer"])
 
 
-# def get_scores(result_file, data_file, pid_split):
-#     # read result file
-#     results = json.load(open(result_file))["results"]
-#     num = len(results)
-#     # assert num == 4241
-#     print("number of questions:", num)
+    data = {
+        "results":results,
+        "args":vars(args)
+    }
 
-#     # read data file
-#     sqa_data = json.load(open(data_file))
+    return data
 
-#     # construct pandas data
-#     sqa_pd = pd.DataFrame(sqa_data).T
-#     res_pd = sqa_pd[sqa_pd['split'] == eval_split]  # test set
+def get_acc_with_condition(results, query, values):
+    correct_list = []
+    if isinstance(values, list):
+        for key in list(results.keys()):
+            if results[key]["query"] in values:
+                correct_list.append(int(results[key]["true_false"]))
+            else:
+                continue
+    else:
+        for key in list(results.keys()):
+            if results[key]["query"]==values:
+                correct_list.append(int(results[key]["true_false"]))
+            else:
+                continue
 
-#     # update data
-#     for i in range(len(pid_split)):
+    acc = "{:.2f}".format((sum(correct_list)/ len(correct_list) )* 100)
+    return acc
 
-#     for index, row in res_pd.iterrows():
+def get_scores(result_file):
+    # read result file
+    results = json.load(open(result_file))["results"]
+    num = len(results)
+    # assert num == 4241
+    print("number of questions:", num)
+       
 
-#         res_pd.loc[index, 'no_context'] = True if (not row['hint'] and not row['image']) else False
-#         res_pd.loc[index, 'has_text'] = True if row['hint'] else False
-#         res_pd.loc[index, 'has_image'] = True if row['image'] else False
-#         res_pd.loc[index, 'has_text_image'] = True if (row['hint'] and row['image']) else False
+    # accuracy scores
+    acc_average = (sum([1 if results[key]["true_false"]==True else 0 for key in list(results.keys())])/ num) * 100 
 
-#         label = row['answer']
-#         pred = int(results[index])
-#         res_pd.loc[index, 'pred'] = pred
-#         res_pd.loc[index, 'true_false'] = (label == pred)
+    scores = {
+        'acc_natural':
+        get_acc_with_condition(results, 'subject', 'natural science'),
+        'acc_social':
+        get_acc_with_condition(results, 'subject', 'social science'),
+        'acc_language':
+        get_acc_with_condition(results, 'subject', 'language science'),
+        'acc_has_text':
+        get_acc_with_condition(results, 'has_text', True),
+        'acc_has_image':
+        get_acc_with_condition(results, 'has_image', True),
+        'acc_no_context':
+        get_acc_with_condition(results, 'no_context', True),
+        'acc_grade_1_6':
+        get_acc_with_condition(results, 'grade', ['grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6']),
+        'acc_grade_7_12':
+        get_acc_with_condition(results, 'grade', ['grade7', 'grade8', 'grade9', 'grade10', 'grade11', 'grade12']),
+        'acc_average':
+        "{:.2f}".format(acc_average),
+    }
 
-#     # accuracy scores
-#     acc_average = len(res_pd[res_pd['true_false'] == True]) / num * 100
-#     #assert result_file.split('_')[-1] == "{:.3f}.json".format(acc_average)
-
-#     scores = {
-#         'acc_natural':
-#         get_acc_with_condition(res_pd, 'subject', 'natural science'),
-#         'acc_social':
-#         get_acc_with_condition(res_pd, 'subject', 'social science'),
-#         'acc_language':
-#         get_acc_with_condition(res_pd, 'subject', 'language science'),
-#         'acc_has_text':
-#         get_acc_with_condition(res_pd, 'has_text', True),
-#         'acc_has_image':
-#         get_acc_with_condition(res_pd, 'has_image', True),
-#         'acc_no_context':
-#         get_acc_with_condition(res_pd, 'no_context', True),
-#         'acc_grade_1_6':
-#         get_acc_with_condition(res_pd, 'grade', ['grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6']),
-#         'acc_grade_7_12':
-#         get_acc_with_condition(res_pd, 'grade', ['grade7', 'grade8', 'grade9', 'grade10', 'grade11', 'grade12']),
-#         'acc_average':
-#         "{:.2f}".format(acc_average),
-#     }
-
-#     return scores
+    return scores
 
 
 
@@ -129,16 +155,16 @@ if __name__ == '__main__':
     seed_everything(42)
     torch.set_float32_matmul_precision('medium')
 
-    print("----- Parsed Arguments -----")
     args = parse_args()
+    print("----- Parsed Arguments -----")
 
-    print("----- Read Dataset -----") 
     if args.task_name == "univqa":
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
     else:
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
     
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+    print("----- Read Dataset -----") 
 
     # load processor
     processor = AutoProcessor.from_pretrained(args.base_model_name)
@@ -166,16 +192,24 @@ if __name__ == '__main__':
         checkpoint_path=checkpoint_path,
         map_location=torch.device('cpu')
     )
+    print("----- Model Setup and Loaded -----")
 
     # model = Pix2StructForConditionalGeneration.from_pretrained(checkpoint_path=checkpoint_path)
 
     # create eval dataloader - optional
-    eval_dataloader = create_eval_dataloader(os.path.join(args.data_root, args.pickle_files_dir, args.data_type), args.eval_split, processor, args.max_patches, args.output_format, args.eval_batch_size)
+    pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
+    batch_size = 1
+    eval_dataloader = create_eval_dataloader(pickle_files_path, args.eval_split, processor, args.max_patches, args.output_format, batch_size) 
 
-    result_file_path = os.path.join(args.output_root, args.result_filename)
-    gen_results(model, eval_dataloader, problem_list, result_file_path)
+    model_name = model.__class__.__name__
+    result_filepath = get_result_filepath(args, model_name)
+    
+    data = gen_results(model, eval_dataloader, problem_list, result_filepath)
+    print("----- Results Generated -----")
 
+    save_results(result_filepath, data)
+    print("----- Results Saved -----")
     
 
     # # create trainer

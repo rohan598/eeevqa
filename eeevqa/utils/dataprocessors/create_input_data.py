@@ -309,10 +309,10 @@ def save_dataset(dataset, save_dir="", filename=""):
 
 if __name__ == '__main__':
     
-    print("----- Parsed Arguments -----")
-    args = parse_args()
 
-    print("----- Read Dataset -----") 
+    args = parse_args()
+    print("----- Parsed Arguments -----")
+
     if args.task_name == "univqa":
         ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
     else:
@@ -321,7 +321,8 @@ if __name__ == '__main__':
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
     pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
-
+    
+    print("----- Read Dataset -----") 
 
     # set params for html
     params = {
@@ -334,19 +335,18 @@ if __name__ == '__main__':
 
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
-    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_type, str(args.layout_type))
+    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
-        print("----- Creating Image Collection -----") 
         convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
                         save_dir=save_dir, sample_subset = args.sample_subset, 
                         crop_padding = args.crop_padding, params = params)
+        print("----- Created Image Collection -----") 
     
     skip_dataset_gen = parse_boolean(args.skip_dataset_gen)
     
     if skip_dataset_gen == False:
         # create dataset
-        print("----- Creating Dataset from Image Collection -----") 
         dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
                         source=args.data_split, save_dir = save_dir, 
                         output_format=args.output_format,
@@ -354,11 +354,12 @@ if __name__ == '__main__':
                         sample_subset = args.sample_subset,
                         task_name = args.task_name
                         ) 
+        print("----- Created Dataset from Image Collection -----") 
         
         # save dataset
-        print("----- Saving created dataset -----") 
         save_dataset(
             dataset,
             save_dir = save_dir,
             filename = f"{args.data_split}.pkl"
         )
+        print("----- Saved created dataset -----") 
