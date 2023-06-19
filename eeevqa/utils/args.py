@@ -60,8 +60,8 @@ def parse_args():
     parser.add_argument('--es_monitor', type=str, default="val_acc", help='Early stopping monitor metric')
 
     parser.add_argument('--es_mode', type=str, default="max", help='Early stopping monitor metric comparison')
-    
-    parser.add_argument('--es_delta', type=float, default=0.0, help='Early stopping monitor metric minimum required change')
+
+    parser.add_argument('--es_min_delta', type=float, default=0.0, help='Early stopping monitor metric minimum required change')
 
     parser.add_argument('--es_patience', type=int, default=3, help='Early stopping monitor metric max epochs without improvement')
 

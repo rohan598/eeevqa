@@ -1,7 +1,7 @@
 from pytorch_lightning import LightningModule
 
 from transformers import Pix2StructForConditionalGeneration, AutoProcessor
-from transformers.optimization import Adafactor, get_cosine_schedule_with_warmup
+from transformers.optimization import Adafactor, get_cosine_schedule_with_warmup, AdafactorSchedule
 
 from collections.abc import Sequence, Callable
 
@@ -105,20 +105,20 @@ class Pix2StructVanilla(LightningModule):
         generated_ids = self.model.generate(flattened_patches=flattened_patches, attention_mask=attention_mask, max_new_tokens=self.max_new_tokens)  
         text_predictions = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
 
-        self.log("val_loss", val_loss, on_step=True, on_epoch=True, sync_dist=True, batch_size = self.eval_batch_size)
+        self.log("val_loss", val_loss, on_epoch=True, sync_dist=True, batch_size = self.eval_batch_size)
 
         answer_predicted, answer_target = get_answer_pair(text_predictions, qids, self.problem_list, self.options)
 
         self.val_accuracy_metric.update(answer_predicted, answer_target)
         
-        self.log("val_acc", self.val_accuracy_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+        self.log("val_acc", self.val_accuracy_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
 
         if self.output_format != "A":
             explanation_predicted, explanation_target = get_explanation_pair(text_predictions, qids, self.problem_list)
 
             self.val_rouge_metric.update(explanation_predicted, explanation_target)
             
-            self.log("val_rouge", self.val_rouge_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+            self.log("val_rouge", self.val_rouge_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
     
     def on_validation_epoch_end(self):
         pass
@@ -127,33 +127,36 @@ class Pix2StructVanilla(LightningModule):
         """Prepare optimizer and schedule (linear warmup and decay)"""
 
         model = self.model
-        optimizer = Adafactor(model.parameters(),
-                              scale_parameter=False, relative_step=False, 
-                              lr=self.learning_rate, weight_decay=self.weight_decay)
-
-        scheduler = get_cosine_schedule_with_warmup(optimizer,
-                                                    num_warmup_steps=self.warmup_steps, num_training_steps=self.total_steps)
-
-        return ([optimizer], [scheduler])
-
-        # model = self.model
-        # optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        # scheduler = WarmupCosineSchedule(
-        #     optimizer=optimizer, 
-        #     warmup_steps=self.warmup_steps, 
-        #     t_total=self.trainer.estimated_stepping_batches, 
-        #     cycles = self.cycles
-        # )
-        
-        # return (
-        #     [optimizer], 
-        #     [
-        #         {
-        #         'scheduler': scheduler,
-        #         'interval': 'step',
-        #         'frequency': 1,
-        #         'reduce_on_plateau': False,
-        #         }
-        #     ]
-        # )
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        scheduler = WarmupCosineSchedule(
+            optimizer=optimizer, 
+            warmup_steps=self.warmup_steps, 
+            t_total=self.total_steps, 
+            cycles = self.cycles
+        )
+        # set total number of steps such that at final step learning rate zero, in case t steps less than what you want for cosine to reach zero, it will have an uptrend and disturb learning
+  
+        return (
+            [optimizer], 
+            [
+                {
+                'scheduler': scheduler,
+                'interval': 'step',
+                'frequency': 1,
+                'reduce_on_plateau': False,
+                }
+            ]
+        )
     
+        # model = self.model
+        # optimizer = Adafactor(model.parameters(),
+        #                       scale_parameter=False,relative_step=False,
+        #                       lr=self.learning_rate,
+        #                       weight_decay=self.weight_decay
+        #                       )
+        # scheduler = AdafactorSchedule(optimizer)
+        # scheduler = get_cosine_schedule_with_warmup(optimizer,
+        #                                             num_warmup_steps=self.warmup_steps,
+        #                                             num_training_steps=self.total_steps)
+
+        # return ([optimizer], [scheduler])

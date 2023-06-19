@@ -138,11 +138,12 @@ if __name__ == '__main__':
 '''
 TODO:
 Corrections:
--> ealry stopping based on val accuracy
 
 -> new dataset method
 -> github issue tracking
 -> zero gpu node logging only
 -> cross attention method
 -> hydra template
+-> custom lightin ai loop to validate after every n steps of training
+1757~LOC
 '''
