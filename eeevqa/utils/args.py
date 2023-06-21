@@ -109,6 +109,8 @@ def parse_args():
                         default = 1e-5,
                         help='weight decay')
 
+    parser.add_argument('--skip_scheduler', type=str, default="True")
+    
     parser.add_argument('--warmup_steps', 
                             type=int,
                             default = 1000,
@@ -130,11 +132,15 @@ def parse_args():
                         help='number of cpu workers for dataloading')
     
     # evaluation args
-    parser.add_argument('--eval_split', type=str, default='minival', choices=['minitest', 'test', 'val', 'minival'])
+    parser.add_argument('--eval_split', type=str, default='minival', choices=['minitest', 'test', 'val', 'minival','tiny_test','tiny_val',"train","minitrain","tiny_train"])
 
     parser.add_argument('--eval_checkpoint_name', type=str, default='')
 
     parser.add_argument('--results_dir', type=str, default='model_results')
+
+    parser.add_argument('--skip_model_output_gen', type=str, default="False")
+    
+    parser.add_argument('--skip_model_score_pred', type=str, default="False")
     
     args = parser.parse_args()
 

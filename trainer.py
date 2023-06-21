@@ -13,7 +13,7 @@ import torch
 
 from transformers import AutoProcessor
 
-from eeevqa.utils.args import parse_args
+from eeevqa.utils.args import parse_args, parse_boolean
 from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list
 
@@ -69,6 +69,7 @@ if __name__ == '__main__':
 
     sdm.setup("fit")
     print("----- Lightning Data Module Fitted -----")
+    skip_scheduler = parse_boolean(args.skip_scheduler)
 
     model = Pix2StructVanilla(
             model_name_or_path = args.base_model_name,
@@ -83,6 +84,7 @@ if __name__ == '__main__':
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
             output_format=args.output_format,
+            skip_scheduler=skip_scheduler,
             warmup_steps = args.warmup_steps,
             total_steps = args.total_steps,
             cycles = args.cycles
@@ -139,7 +141,7 @@ if __name__ == '__main__':
 TODO:
 Corrections:
 
--> new dataset method
+-> new dataset method with parallel processing
 -> github issue tracking
 -> zero gpu node logging only
 -> cross attention method

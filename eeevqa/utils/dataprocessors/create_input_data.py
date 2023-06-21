@@ -9,186 +9,16 @@ root = rootutils.setup_root(
 
 import os
 import numpy as np
-import pdfkit
 import pickle
-import fitz
-from PIL import Image, ImageOps
-from collections import namedtuple
-import torchvision.transforms as transforms
 
+from collections import namedtuple
+
+from eeevqa.utils.dataprocessors.helpers import create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
 from eeevqa.utils.args import parse_args, parse_boolean
 
-# data accesor function
-def get_choice_text(problem, options, verbose = False):
-    choices = problem['choices']
-    choice_list = []
-    for i, c in enumerate(choices):
-        choice_list.append("({}) {}".format(options[i], c))
-    choice_txt = " ".join(choice_list)
-    if verbose:
-        print(choice_txt)
-    
-    return choice_txt
-
-# HTML functions
-def create_question_tag():
-    question_tag = "<h2>{question_content}</h2>"
-    return question_tag
-
-def create_choice_tag():
-    choice_tag = "<h3>{choice_content}</h3>"
-    return choice_tag
-
-def create_img_tag():
-    img_tag = '<img src="{img_source}">'
-    return img_tag
-
-def create_context_tag():
-    context_tag = "<p>{context_content}</p>"
-    return context_tag
-
-def create_lecture_tag():
-    lecture_tag = "<p>{lecture_content}</p>"
-    return lecture_tag
-
-# deprecated will be removed in the future
-def create_html_template_modular():
-    html_template = \
-        '''
-            <html>
-                <body style="background-color:white;">
-                    {question_tag}
-                    {choice_tag}
-                    {img_tag}
-                    {context_tag}
-                    {lecture_tag}
-                </body>
-            </html>
-        '''
-    return html_template
-
-def create_html_template_modular_v2(tags=[]):
-    html_template = '<html> <body style="background-color:white;">'
-    for tag in tags:
-        html_template += "{" + tag + "}"           
-    html_template+="</body></html>"
-
-    return html_template
-
-def create_html_file_modular(params, df, sample_num=None, layout_type=1):
-
-    # create individual tags
-    
-    # Question
-    if params["set_question_as_header"] == False:
-        question_tag = create_question_tag().format(question_content = df[sample_num]["question"])
-        
-    else:
-        question_tag = ""
-        
-    # Choices
-    if params["set_question_as_header"] == False:
-        choice_tag = create_choice_tag().format(choice_content = get_choice_text(df[sample_num], params["options"]))
-        
-    else:
-        choice_tag = ""
-        
-    # Image source
-    if df[sample_num]["image"] is not None:
-        img_tag = create_img_tag().format(img_source = os.path.join(os.getcwd(), "data", df[sample_num]["split"], \
-                              str(sample_num), df[sample_num]['image']))
-    else:
-        img_tag = ""
-
-    # Context
-    if df[sample_num]["hint"] is not None and params["skip_text_context"] == False:
-        context_tag = create_context_tag().format(context_content = df[sample_num]["hint"])    
-    else:
-        context_tag = ""
-
-
-    # Lecture
-    if df[sample_num]["lecture"] is not None and params["skip_lecture"] == False:
-        lecture_tag = create_lecture_tag().format(lecture_content = df[sample_num]['lecture']) 
-
-    else:
-        lecture_tag = ""
-    
-    # compose tags to html
-    if layout_type==1: # QM I CL
-        tags = ["question_tag", "choice_tag", "img_tag", "context_tag", "lecture_tag"]
-        
-    elif layout_type==2: # QM CL I
-        tags = ["question_tag", "choice_tag", "context_tag", "lecture_tag", "img_tag"]
-    
-    elif layout_type==3: # QM I
-        tags = ["question_tag", "choice_tag", "img_tag"]
-    
-    
-    final_html_file = create_html_template_modular_v2(tags).format(question_tag = question_tag, choice_tag = choice_tag, \
-                                          img_tag = img_tag, context_tag = context_tag, \
-                                          lecture_tag = lecture_tag)
-    
-    return final_html_file
-
-#deprecated will be removed in the future
-def create_html_file(html_template, df, sample_num=None):
-
-    # Image source
-    img_source = os.path.join(os.getcwd(), "data", df[sample_num]["split"], \
-                              str(sample_num), df[sample_num]['image']) \
-                            if df[sample_num]["image"] is not None else ""
-
-    # Context
-    context = df[sample_num]["hint"] if df[sample_num]["hint"] is not None else ""
-
-    # Lecture
-    lecture = df[sample_num]["lecture"] if df[sample_num]["lecture"] is not None else ""
-
-    final_html_file = html_template.format(img_source = img_source, context = context, lecture = lecture)
-    return final_html_file
-
-def save_html_file(html_file, source, img_num, save_dir=""):
-    with open(os.path.join(save_dir, f"{source}_{img_num}.html"), "w") as f:
-        f.writelines(html_file)
-
-# HTML to PDF
-def convert_html_to_pdf(path_to_inputfile, path_to_outputfile):
-    pdfkit.from_file(f'{path_to_inputfile}.html', f'{path_to_outputfile}.pdf')
-
-# PDF to Image
-def convert_pdf_to_image(path_to_inputfile, path_to_outputfile):
-    
-    # To get better resolution
-    zoom_x = 1.0  # horizontal zoom
-    zoom_y = 1.0  # vertical zoom
-    mat = fitz.Matrix(zoom_x, zoom_y)  # zoom factor 2 in each dimension
-
-    filename = f"{path_to_inputfile}.pdf"
-    with fitz.open(filename) as doc:
-        for page in doc:  # iterate through the pages
-            pix = page.get_pixmap(matrix=mat)  # render page to an image
-            pix.save(f"{path_to_outputfile}.jpg")  # store image as JPG
-
-# Whitespace removal image
-def remove_white_space(filename, padding = 30, visualize = False):
-    
-    # Open input image
-    im = Image.open(filename)
-    
-    # Get bounding box of text and trim to it
-    bbox = ImageOps.invert(im).getbbox()
-    x, y = 0, 0
-    x_, y_ = im.size[0], bbox[3] + padding
-    new_bbox = (x, y, x_, y_)
-    trimmed = im.crop(new_bbox)
-    trimmed.save(filename)
-    if visualize:
-        trimmed.show()
-
-# Convert Input to Image pipeline
-def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", \
+# Convert Input to Image HTML pipeline
+def convert_input_to_img_v1(problem_list, pid_splits, source="train", save_dir="", \
                          sample_subset = 10, crop_padding = 30, remove_html_file = True, remove_pdf_file = True, \
                          params=None):
     
@@ -212,9 +42,8 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
     for sample_num in idx_list:
         
         # create html template
-        html_template = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
-        html_file = create_html_file(html_template, problem_list, sample_num)
-        
+        html_file = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
+
         # save tmp html file
         save_html_file(html_file, source, sample_num, save_dir=save_dir)
         
@@ -238,44 +67,41 @@ def convert_input_to_img(problem_list, pid_splits, source="train", save_dir="", 
         if remove_pdf_file:
             os.remove(f"{tmp_hpi_filename}.pdf")
 
-# Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None):
+# Convert Input to Image Render Text pipeline
+def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     
-    # header text
-    header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
-
-    text_context =  problem_list[sample_num]["hint"] 
-    lecture =  problem_list[sample_num]["lecture"] 
+    source = params["data_source"]
+    idx_list = pid_splits[source] 
+    idx_list = [int(idx) for idx in idx_list]
     
-    #input
-    pil_to_tensor_transform = transforms.Compose([
-    transforms.PILToTensor()
-    ])
-    with Image.open(f"{img_filename}.jpg") as img:
-        image = pil_to_tensor_transform(img)
-        image_mean = 0
-        image_std = 0
-        if preprocess_image is not None:
-            image, image_mean, image_std = preprocess_image(image)
-
-    # Outputs
-    if output_format == 'A':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
-    elif output_format == 'AE':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
-    elif output_format == 'EA':
-        output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
-
-    output = output.replace("  ", " ").strip()
-    if output.endswith("BECAUSE:"):
-        output = output.replace("BECAUSE:", "").strip()
+    if params["sample_subset"] is not None:
+        idx_list = idx_list[:params["sample_subset"]]
+        source = "tiny_" + source
     
-    if task_name == "univqa":
-        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
+    stats_dict = {
+        "original_size_w":[],
+        "original_size_h":[],
+        "final_size_w":[],
+        "final_size_h":[]
+    }
+    # create save directory if it does not exist
+    
+    save_dir = os.path.join(save_dir, source)
+        
+    if os.path.exists(save_dir) == False:
+        os.makedirs(save_dir)
+        print("Save directory created")
     else:
-        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
+        print("Save directory already present")
+        
+    image_dir = os.path.join(os.getcwd(),"data",params["data_split"])
+    
+    for sample_num in idx_list:
+        
+        # call image converter
+        stats_dict = image_creator(image_dir, problem_list, sample_num=sample_num, stats_dict=stats_dict, params=params)
 
-    return scienceqa_example
+    return stats_dict
 
 def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_dir = "", output_format="AE", \
                                  options = None, 
@@ -338,7 +164,7 @@ if __name__ == '__main__':
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
-        convert_input_to_img(problem_list, pid_splits, source=args.data_split,  
+        convert_input_to_img_v1(problem_list, pid_splits, source=args.data_split,  
                         save_dir=save_dir, sample_subset = args.sample_subset, 
                         crop_padding = args.crop_padding, params = params)
         print("----- Created Image Collection -----") 

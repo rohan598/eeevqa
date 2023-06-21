@@ -28,6 +28,7 @@ class Pix2StructVanilla(LightningModule):
             train_batch_size: int = 2,
             eval_batch_size: int = 2,
             output_format:str = "AE",
+            skip_scheduler:bool = True,
             warmup_steps:int = 1000,
             total_steps:int = 10000,
             cycles:float = 0.5,
@@ -52,6 +53,7 @@ class Pix2StructVanilla(LightningModule):
         self.eval_batch_size = eval_batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.skip_scheduler = skip_scheduler
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
         self.cycles = cycles
@@ -128,26 +130,29 @@ class Pix2StructVanilla(LightningModule):
 
         model = self.model
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        scheduler = WarmupCosineSchedule(
-            optimizer=optimizer, 
-            warmup_steps=self.warmup_steps, 
-            t_total=self.total_steps, 
-            cycles = self.cycles
-        )
-        # set total number of steps such that at final step learning rate zero, in case t steps less than what you want for cosine to reach zero, it will have an uptrend and disturb learning
+        
+        if self.skip_scheduler == False:
+            scheduler = WarmupCosineSchedule(
+                optimizer=optimizer, 
+                warmup_steps=self.warmup_steps, 
+                t_total=self.total_steps, 
+                cycles = self.cycles
+            )
+
+            lr_scheduler = {
+                    'scheduler': scheduler,
+                    'interval': 'step',
+                    'frequency': 1,
+                    'reduce_on_plateau': False,
+                    }
   
-        return (
-            [optimizer], 
-            [
-                {
-                'scheduler': scheduler,
-                'interval': 'step',
-                'frequency': 1,
-                'reduce_on_plateau': False,
-                }
-            ]
-        )
-    
+            return ([optimizer], [lr_scheduler])
+
+        else:
+            return ([optimizer], [])
+        
+        ### set total number of steps such that at final step learning rate zero, in case t steps less than what you want for cosine to reach zero, it will have an uptrend and disturb learning
+
         # model = self.model
         # optimizer = Adafactor(model.parameters(),
         #                       scale_parameter=False,relative_step=False,
