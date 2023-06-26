@@ -61,7 +61,7 @@ def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     for sample_num in idx_list:
         
         # call image converter
-        params["save_path"] = os.path.join(save_dir, f"{data_split}_{sample_num}")
+        params["save_path"] = os.path.join(save_dir, f"{data_split}_{sample_num}.jpg")
         stats_dict = image_creator(image_dir, problem_list, sample_num=sample_num, stats_dict=stats_dict, params=params)
 
     return stats_dict
@@ -71,12 +71,14 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     data_split, idx_list, save_dir, _ = input_to_image_initialization(pid_splits=pid_splits, params=params) 
     
     dataset = []
+    ScienceQA = params["ScienceQA"]
     for sample_num in idx_list:
         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
         dataset.append(create_one_scienceqa_example(problem_list, img_filename=img_filename, \
                                                     sample_num=sample_num, output_format=params["output_format"], \
                                                     options = params["options"], preprocess_image = params["preprocess_image"],
-                                                    task_name = params["task_name"]))
+                                                    task_name = params["task_name"],
+                                                    ScienceQA = ScienceQA))
     return dataset
         
 # saving functionality
@@ -115,11 +117,12 @@ if __name__ == '__main__':
         "sample_subset":args.sample_subset,
         "save_dir":save_dir,
         "options":args.options,
-        "ouptut_format":args.output_format,
+        "output_format":args.output_format,
         "skip_text_context":parse_boolean(args.skip_text_context),
         "skip_lecture":parse_boolean(args.skip_lecture),
         "visualize":parse_boolean(args.visualize_gen),
-        "preprocess_image":None
+        "preprocess_image":None,
+        "ScienceQA":ScienceQA
     }
 
     # pipeline for image dataset generation
@@ -152,6 +155,7 @@ if __name__ == '__main__':
                 "left_padding":args.left_padding_dgv2,
                 "path_to_font":args.assets_dir,
                 "analyze":parse_boolean(args.analyze_dgv2),
+                "save":True
             }
             params.update(params_v2)
 

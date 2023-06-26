@@ -327,7 +327,7 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
 
 ######### ScienceQA Dataset methods #########
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None):
+def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None, ScienceQA=None):
     
     # header text
     header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
@@ -357,19 +357,10 @@ def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, ou
     output = output.replace("  ", " ").strip()
     if output.endswith("BECAUSE:"):
         output = output.replace("BECAUSE:", "").strip()
-    
+
     if task_name == "univqa":
         scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
     else:
         scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
 
     return scienceqa_example
-
-# dummy main to prevent error cause by ScienceQA definition used int he functions
-if __name__ == '__main__':
-    
-    task_name = "univqa"
-    if task_name == "univqa":
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    else:
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
