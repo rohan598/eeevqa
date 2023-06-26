@@ -141,11 +141,17 @@ if __name__ == '__main__':
 TODO:
 Corrections:
 
--> new dataset method with parallel processing
--> github issue tracking
+-> cleanup dataset processing
+-> test html method
+-> test remder text method 
+-> run experiments
 -> zero gpu node logging only
--> cross attention method
+-> clean code, add readme and save it as template for future
+-> github issue tracking
+
 -> hydra template
+
+-> cross attention method
 -> custom lightin ai loop to validate after every n steps of training
 1757~LOC
 '''

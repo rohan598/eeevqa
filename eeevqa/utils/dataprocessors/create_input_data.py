@@ -13,43 +13,26 @@ import pickle
 
 from collections import namedtuple
 
-from eeevqa.utils.dataprocessors.helpers import create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example
+from eeevqa.utils.dataprocessors.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # Convert Input to Image HTML pipeline
-def convert_input_to_img_v1(problem_list, pid_splits, source="train", save_dir="", \
-                         sample_subset = 10, crop_padding = 30, remove_html_file = True, remove_pdf_file = True, \
-                         params=None):
+def convert_input_to_img_v1(problem_list, pid_splits, params=None):
     
-    idx_list = pid_splits[source] 
-    idx_list = [int(idx) for idx in idx_list]
-    
-    if sample_subset is not None:
-        idx_list = idx_list[:sample_subset]
-        source = "tiny_" + source
-    
-    # create save directory if it does not exist
-    save_dir = os.path.join(save_dir, source)
+    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(pid_splits=pid_splits, params=params)
         
-    if os.path.exists(save_dir) == False:
-        os.makedirs(save_dir)
-        print("Save directory created")
-    else:
-        print("Save directory already present")
-        
-    
     for sample_num in idx_list:
         
         # create html template
         html_file = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
 
         # save tmp html file
-        save_html_file(html_file, source, sample_num, save_dir=save_dir)
+        save_html_file(html_file, data_split, sample_num, save_dir=save_dir)
         
         # tmp and final filenames
-        tmp_hpi_filename = os.path.join(os.getcwd(), save_dir, f"{source}_{sample_num}")
-        img_filename = os.path.join(os.getcwd(), save_dir, f"{source}_{sample_num}")
+        tmp_hpi_filename = os.path.join(save_dir, f"{data_split}_{sample_num}")
+        img_filename = os.path.join(save_dir, f"{data_split}_{sample_num}")
         
         # convert tmp html to tmp pdf & delete tmp html file
         convert_html_to_pdf(tmp_hpi_filename, tmp_hpi_filename)
@@ -58,73 +41,42 @@ def convert_input_to_img_v1(problem_list, pid_splits, source="train", save_dir="
         convert_pdf_to_image(tmp_hpi_filename, img_filename)
         
         # crop whitespace
-        remove_white_space(f"{img_filename}.jpg")
+        remove_white_space(f"{img_filename}.jpg", crop_padding=params["crop_padding"], visualize=params["visualize"], stats_dict=stats_dict)
         
         # cleaning by removing tmp files
-        if remove_html_file:
+        if params["remove_html_file"]:
             os.remove(f"{tmp_hpi_filename}.html")
         
-        if remove_pdf_file:
+        if params["remove_pdf_file"]:
             os.remove(f"{tmp_hpi_filename}.pdf")
+
+    return stats_dict
 
 # Convert Input to Image Render Text pipeline
 def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     
-    source = params["data_source"]
-    idx_list = pid_splits[source] 
-    idx_list = [int(idx) for idx in idx_list]
-    
-    if params["sample_subset"] is not None:
-        idx_list = idx_list[:params["sample_subset"]]
-        source = "tiny_" + source
-    
-    stats_dict = {
-        "original_size_w":[],
-        "original_size_h":[],
-        "final_size_w":[],
-        "final_size_h":[]
-    }
-    # create save directory if it does not exist
-    
-    save_dir = os.path.join(save_dir, source)
-        
-    if os.path.exists(save_dir) == False:
-        os.makedirs(save_dir)
-        print("Save directory created")
-    else:
-        print("Save directory already present")
-        
-    image_dir = os.path.join(os.getcwd(),"data",params["data_split"])
-    
+    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(pid_splits=pid_splits, params=params)
+    image_dir = os.path.join(params["data_root"], params["data_source"])
+
     for sample_num in idx_list:
         
         # call image converter
+        params["save_path"] = os.path.join(save_dir, f"{data_split}_{sample_num}")
         stats_dict = image_creator(image_dir, problem_list, sample_num=sample_num, stats_dict=stats_dict, params=params)
 
     return stats_dict
 
-def convert_scienceqa_to_dataset(problem_list, pid_splits, source="train", save_dir = "", output_format="AE", \
-                                 options = None, 
-                                 preprocess_image = None, sample_subset = None,
-                                 task_name = None):
+def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     
-    
-    idx_list = pid_splits[source] 
-    idx_list = [int(idx) for idx in idx_list]
-    
-    if sample_subset is not None:
-        idx_list = idx_list[:sample_subset]
-        source = "tiny_"+source
-        
-    save_dir = os.path.join(save_dir, source)    
+    data_split, idx_list, save_dir, _ = input_to_image_initialization(pid_splits=pid_splits, params=params) 
     
     dataset = []
     for sample_num in idx_list:
-        ifile = os.path.join(os.getcwd(), save_dir, f"{source}_{sample_num}")
-        dataset.append(create_one_scienceqa_example(problem_list, img_filename=ifile, \
-                                                    sample_num=sample_num, output_format=output_format, \
-                                                    options = options, preprocess_image = preprocess_image,
-                                                    task_name = task_name))
+        img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
+        dataset.append(create_one_scienceqa_example(problem_list, img_filename=img_filename, \
+                                                    sample_num=sample_num, output_format=params["output_format"], \
+                                                    options = params["options"], preprocess_image = params["preprocess_image"],
+                                                    task_name = params["task_name"]))
     return dataset
         
 # saving functionality
@@ -147,39 +99,74 @@ if __name__ == '__main__':
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
     pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
-    
+    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
+
     print("----- Read Dataset -----") 
 
-    # set params for html
+    # set common params 
     params = {
-        "set_question_as_header": parse_boolean(args.set_question_as_header),
+        "task_name":args.task_name,
+        "data_root":args.data_root,
+        "data_source":args.data_source,
+        "data_type":args.data_type,
+        "data_version":args.data_version,
+        "data_split":args.data_split,
+        "sample_subset":args.sample_subset,
+        "save_dir":save_dir,
+        "options":args.options,
+        "layout_type":args.layout_type,
         "skip_text_context":parse_boolean(args.skip_text_context),
         "skip_lecture":parse_boolean(args.skip_lecture),
-        "options":args.options,
-        "layout_type":args.layout_type
+        "visualize":parse_boolean(args.visualize_datagen),
+        "preprocess_image":None
     }
 
     # pipeline for image dataset generation
     skip_image_gen = parse_boolean(args.skip_image_gen)
-    save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
     if os.path.exists(os.path.join(save_dir, args.data_split)) == False or skip_image_gen == False:
-        convert_input_to_img_v1(problem_list, pid_splits, source=args.data_split,  
-                        save_dir=save_dir, sample_subset = args.sample_subset, 
-                        crop_padding = args.crop_padding, params = params)
-        print("----- Created Image Collection -----") 
+
+        if args.data_version == "v1":
+            # set params for v1 and update original params
+            params_v1 = {
+                "set_question_as_header": parse_boolean(args.set_question_as_header_dgv1),
+                "crop_padding":args.crop_padding_dgv1,
+                "remove_html_file":parse_boolean(args.remove_html_file_dgv1),
+                "remove_pdf_file":parse_boolean(args.remove_pdf_file_dgv1),
+            }
+            params.update(params_v1)
+
+            convert_input_to_img_v1(problem_list, pid_splits, params = params)
+
+        elif args.data_version == "v2":
+            # set params for v2 and update original params
+            params_v2 = {
+                "header_size":args.header_size_dgv2,
+                "text_context_size":args.text_context_size_dgv2,
+                "text_color":args.text_color_dgv2,
+                "background_color":args.background_color_dgv2,
+                "top_padding":args.top_padding_dgv2,
+                "right_padding":args.right_padding_dgv2,
+                "bottom_padding":args.bottom_padding_dgv2,
+                "left_padding":args.left_padding_dgv2,
+                "path_to_font":args.assets_dir,
+                "analyze":parse_boolean(args.analyze_dgv2),
+            }
+            params.update(params_v2)
+
+            convert_input_to_img_v2(problem_list, pid_splits, params = params)
+        
+        print(f"----- Created Image {args.data_version} Collection -----") 
     
     skip_dataset_gen = parse_boolean(args.skip_dataset_gen)
     
     if skip_dataset_gen == False:
         # create dataset
-        dataset = convert_scienceqa_to_dataset(problem_list, pid_splits, 
-                        source=args.data_split, save_dir = save_dir, 
-                        output_format=args.output_format,
-                        options = args.options, preprocess_image = None, 
-                        sample_subset = args.sample_subset,
-                        task_name = args.task_name
-                        ) 
+        dataset = convert_scienceqa_to_dataset(
+                    problem_list, 
+                    pid_splits,
+                    params=params
+                ) 
         print("----- Created Dataset from Image Collection -----") 
         
         # save dataset

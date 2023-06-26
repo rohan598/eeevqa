@@ -7,6 +7,35 @@ import torchvision.transforms as transforms
 from collections import namedtuple
 import math
 
+######### Common Methods #########
+def input_to_image_initialization(pid_splits, params=None):
+    
+    data_split = params["data_split"]
+    idx_list = pid_splits[data_split] 
+    idx_list = [int(idx) for idx in idx_list]
+    
+    if params["sample_subset"] is not None:
+        idx_list = idx_list[:params["sample_subset"]]
+        data_split = "tiny_" + params["data_source"]
+    
+    # create save directory if it does not exist
+    save_dir = os.path.join(params["save_dir"], data_split)
+        
+    if os.path.exists(save_dir) == False:
+        os.makedirs(save_dir)
+        print("Save directory created")
+    else:
+        print("Save directory already present")
+    
+    stats_dict = {
+        "original_size_w":[],
+        "original_size_h":[],
+        "final_size_w":[],
+        "final_size_h":[]
+    }
+
+    return data_split, idx_list, save_dir, stats_dict
+
 ######### HTML to Image Processing Methods #########
 # data accesor function
 def get_choice_text(problem, options, verbose = False):
@@ -129,7 +158,7 @@ def convert_pdf_to_image(path_to_inputfile, path_to_outputfile):
             pix.save(f"{path_to_outputfile}.jpg")  # store image as JPG
 
 # Whitespace removal image
-def remove_white_space(filename, padding = 30, visualize = False):
+def remove_white_space(filename, crop_padding = 30, visualize = False, stats_dict = None):
     
     # Open input image
     im = Image.open(filename)
@@ -137,12 +166,18 @@ def remove_white_space(filename, padding = 30, visualize = False):
     # Get bounding box of text and trim to it
     bbox = ImageOps.invert(im).getbbox()
     x, y = 0, 0
-    x_, y_ = im.size[0], bbox[3] + padding
+    x_, y_ = im.size[0], bbox[3] + crop_padding
     new_bbox = (x, y, x_, y_)
     trimmed = im.crop(new_bbox)
     trimmed.save(filename)
     if visualize:
         trimmed.show()
+    
+    stats_dict["final_size_w"].append(trimmed.size[0])
+    stats_dict["final_size_h"].append(trimmed.size[1])
+
+    return stats_dict
+    
 
 ######### Render Text on Image Processing Methods #########
 
@@ -150,20 +185,14 @@ def render_text_on_image(image, header, text_context, params):
     """Renders a header and text context on a PIL image and returns a new PIL image."""
     params["is_text_context"] = False
     header_image = render_text(header, params)
-    image_type = params["image_type"]
-    print("tc: ", r"{}".format(text_context))
+    layout_type = params["layout_type"]
     if text_context!="":
         params["is_text_context"] = True
-        print(type(text_context))
         text_context_image = render_text(text_context, params)
-        print("here")
         
     else:
-        image_type = 3
+        layout_type = 3
         text_context_image = Image.new("RGB",(1, 1),"white")
-        print(text_context_image.size, text_context_image.height)
-
-#     print(f"image, header, text context = {image.size}, {header_image.size}, {text_context_image.size}")
     
     new_width = max(max(header_image.width, text_context_image.width), image.width)
         
@@ -175,24 +204,23 @@ def render_text_on_image(image, header, text_context, params):
     new_text_context_height = text_context_image.height if text_context_image.height == 1 else int(
       text_context_image.height * (new_width / text_context_image.width))
     
-    print(new_text_context_height)
     new_image = Image.new(
       "RGB",
       (new_width, new_height + new_header_height + new_text_context_height),
       "white")
 
-    if image_type==1: # QM I CL
+    if layout_type==1: # QM I CL
 
         new_image.paste(header_image.resize((new_width, new_header_height)), (0, 0))
         new_image.paste(image.resize((new_width, new_height)), (0, new_header_height))
         new_image.paste(text_context_image.resize((new_width, new_text_context_height)), (0, new_header_height+new_height))
         
-    elif image_type==2: # QM CL I
+    elif layout_type==2: # QM CL I
         new_image.paste(header_image.resize((new_width, new_header_height)), (0, 0))
         new_image.paste(text_context_image.resize((new_width, new_text_context_height)), (0, new_header_height))
         new_image.paste(image.resize((new_width, new_height)), (0, new_header_height+new_text_context_height))
         
-    elif image_type==3: # QM I
+    elif layout_type==3: # QM I
         new_image.paste(header_image.resize((new_width, new_header_height)), (0, 0))
         new_image.paste(image.resize((new_width, new_height)), (0, new_header_height))
         
@@ -249,15 +277,27 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
     # combine question and choice, strip all leading and trailing spaces, 
     # remove all newlines
     question_text = problem_list[sample_num]["question"]
-    choice_text = get_choice_text(problem_list[sample_num], options)
+    choice_text = get_choice_text(problem_list[sample_num], params["options"])
     question_choice_text = question_text + " " + choice_text
-    print(question_choice_text)
+    
     # combine lecture and text context, strip all leading and trailing spaces, 
     # remove all newlines
-    hint_text = ' '.join(problem_list[sample_num]["hint"].split("/n"))
-    lecture_text = ' '.join(problem_list[sample_num]["lecture"].split("/n"))
+
+    # Context
+    if problem_list[sample_num]["hint"] is not None and params["skip_text_context"] == False:
+        hint_text = ' '.join(problem_list[sample_num]["hint"].split("/n")) 
+    else:
+        hint_text = ""
+
+
+    # Lecture
+    if problem_list[sample_num]["lecture"] is not None and params["skip_lecture"] == False:
+        lecture_text = ' '.join(problem_list[sample_num]["lecture"].split("/n"))
+
+    else:
+        lecture_text = ""
+        
     hint_lecture_text = (hint_text + " " + lecture_text).strip()
-    print(hint_lecture_text)
     
     final_im = render_text_on_image(im, question_choice_text, hint_lecture_text, params)
     
@@ -265,18 +305,15 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
         final_w = final_im.size[0]
         final_h = final_im.size[1]
         if final_w * final_h > 4096*256:
-            print(final_w * final_h)
-            final_im.show()
+
             max_ph = int(math.ceil((4096*256)/final_w))
             test_resize = final_im.copy()
             test_resize = test_resize.resize((final_w, max_ph))
-            test_resize.show()
             
             test_clip = final_im.copy()
             test_clip = test_clip.crop((0, 0, final_w, max_ph))
-            test_clip.show()
-            stats_dict["ret"] = True
-            return stats_dict
+
+        
         stats_dict["final_size_w"].append(final_im.size[0])
         stats_dict["final_size_h"].append(final_im.size[1])
     

@@ -19,6 +19,8 @@ def parse_args():
     parser.add_argument('--data_version', type=str, default='v1')
     parser.add_argument('--json_files_dir', type=str, default='scienceqa')
     parser.add_argument('--pickle_files_dir', type=str, default='new_data')
+    parser.add_argument("--assets_dir", type=str, default="assets")
+
     parser.add_argument('--data_type', type=str, default='unimodal')
     parser.add_argument('--layout_type', type=int, default=1)
     parser.add_argument('--captions_filename', type=str, default='captions.json')
@@ -37,11 +39,30 @@ def parse_args():
     parser.add_argument('--skip_image_gen', type=str, default="False")
     parser.add_argument('--skip_dataset_gen', type=str, default="False")
     parser.add_argument('--data_split', type=str, default='minitrain')
-    parser.add_argument('--sample_subset', default=None)
-    parser.add_argument('--crop_padding', type=int, default=30)
-    parser.add_argument('--set_question_as_header', type=str, default="False")
+    parser.add_argument('--data_source', type=str, default='train')
+    parser.add_argument('--sample_subset', type=int, default=0)
     parser.add_argument('--skip_text_context', type=str, default="False")
     parser.add_argument('--skip_lecture', type=str, default="False")
+    parser.add_argument('--visualize_datagen', type=str, default="False")
+
+    ## data gen HTML to Image Technique
+    parser.add_argument('--crop_padding_dgv1', type=int, default=30)
+    parser.add_argument('--set_question_as_header_dgv1', type=str, default="False")
+    parser.add_argument('--remove_html_file_dgv1', type=str, default="True")
+    parser.add_argument('--remove_pdf_file_dgv1', type=str, default="True")
+
+
+    ## data gen render text on image
+    parser.add_argument('--text_color_dgv2', type=str, default="black")
+    parser.add_argument('--background_color_dgv2', type=str, default="white")
+    parser.add_argument('--header_size_dgv2', type=int, default=36)
+    parser.add_argument('--text_context_size_dgv2', type=int, default=18)
+    parser.add_argument('--top_padding_dgv2', type=int, default=5)
+    parser.add_argument('--right_padding_dgv2', type=int, default=5)
+    parser.add_argument('--bottom_padding_dgv2', type=int, default=5)
+    parser.add_argument('--left_padding_dgv2', type=int, default=5)
+    parser.add_argument('--analyze_dgv2', type=str, default="False")
+
 
     # training args
     parser.add_argument('--train_split', type=str, default='minitrain', choices=['train', 'trainval', 'minitrain'])
