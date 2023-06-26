@@ -115,6 +115,7 @@ if __name__ == '__main__':
         "sample_subset":args.sample_subset,
         "save_dir":save_dir,
         "options":args.options,
+        "ouptut_format":args.output_format,
         "skip_text_context":parse_boolean(args.skip_text_context),
         "skip_lecture":parse_boolean(args.skip_lecture),
         "visualize":parse_boolean(args.visualize_gen),
