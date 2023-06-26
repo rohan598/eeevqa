@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--data_version', type=str, default='v1')
     parser.add_argument('--json_files_dir', type=str, default='scienceqa')
     parser.add_argument('--pickle_files_dir', type=str, default='new_data')
-    parser.add_argument("--assets_dir", type=str, default="assets")
+    parser.add_argument("--assets_dir", type=str, default="eeevqa/assets")
 
     parser.add_argument('--data_type', type=str, default='unimodal')
     parser.add_argument('--layout_type', type=int, default=1)
@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument('--sample_subset', type=int, default=0)
     parser.add_argument('--skip_text_context', type=str, default="False")
     parser.add_argument('--skip_lecture', type=str, default="False")
-    parser.add_argument('--visualize_datagen', type=str, default="False")
+    parser.add_argument('--visualize_gen', type=str, default="False")
 
     ## data gen HTML to Image Technique
     parser.add_argument('--crop_padding_dgv1', type=int, default=30)

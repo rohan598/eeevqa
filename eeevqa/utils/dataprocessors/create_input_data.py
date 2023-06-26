@@ -106,18 +106,18 @@ if __name__ == '__main__':
     # set common params 
     params = {
         "task_name":args.task_name,
+        "data_version":args.data_version,
+        "data_type":args.data_type,
         "data_root":args.data_root,
         "data_source":args.data_source,
-        "data_type":args.data_type,
-        "data_version":args.data_version,
         "data_split":args.data_split,
+        "layout_type":args.layout_type,
         "sample_subset":args.sample_subset,
         "save_dir":save_dir,
         "options":args.options,
-        "layout_type":args.layout_type,
         "skip_text_context":parse_boolean(args.skip_text_context),
         "skip_lecture":parse_boolean(args.skip_lecture),
-        "visualize":parse_boolean(args.visualize_datagen),
+        "visualize":parse_boolean(args.visualize_gen),
         "preprocess_image":None
     }
 
