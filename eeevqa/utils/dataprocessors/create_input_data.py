@@ -20,7 +20,7 @@ from eeevqa.utils.args import parse_args, parse_boolean
 # Convert Input to Image HTML pipeline
 def convert_input_to_img_v1(problem_list, pid_splits, params=None):
     
-    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(pid_splits=pid_splits, params=params)
+    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params)
         
     for sample_num in idx_list:
         
@@ -55,9 +55,9 @@ def convert_input_to_img_v1(problem_list, pid_splits, params=None):
 # Convert Input to Image Render Text pipeline
 def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     
-    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(pid_splits=pid_splits, params=params)
+    data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params)
     image_dir = os.path.join(params["data_root"], params["data_source"])
-
+    print(image_dir)
     for sample_num in idx_list:
         
         # call image converter
@@ -68,7 +68,7 @@ def convert_input_to_img_v2(problem_list, pid_splits, params=None):
 
 def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     
-    data_split, idx_list, save_dir, _ = input_to_image_initialization(pid_splits=pid_splits, params=params) 
+    data_split, idx_list, save_dir, _ = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params) 
     
     dataset = []
     ScienceQA = params["ScienceQA"]
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         "data_source":args.data_source,
         "data_split":args.data_split,
         "layout_type":args.layout_type,
-        "sample_subset":args.sample_subset,
+        "sample_subset":args.sample_subset if args.sample_subset!="" else None,
         "save_dir":save_dir,
         "options":args.options,
         "output_format":args.output_format,
@@ -174,10 +174,18 @@ if __name__ == '__main__':
                 ) 
         print("----- Created Dataset from Image Collection -----") 
         
+        data_split = args.data_split
+
+        if args.sample_subset!="":
+            try:
+                int(args.sample_subset)
+            except:
+                data_split = args.sample_subset + "_" +  args.data_split
+
         # save dataset
         save_dataset(
             dataset,
             save_dir = save_dir,
-            filename = f"{args.data_split}.pkl"
+            filename = f"{data_split}.pkl"
         )
         print("----- Saved created dataset -----") 

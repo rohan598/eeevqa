@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--skip_dataset_gen', type=str, default="False")
     parser.add_argument('--data_split', type=str, default='minitrain')
     parser.add_argument('--data_source', type=str, default='train')
-    parser.add_argument('--sample_subset', type=int, default=0)
+    parser.add_argument('--sample_subset', type=str, default="")
     parser.add_argument('--skip_text_context', type=str, default="False")
     parser.add_argument('--skip_lecture', type=str, default="False")
     parser.add_argument('--visualize_gen', type=str, default="False")
@@ -65,9 +65,9 @@ def parse_args():
 
 
     # training args
-    parser.add_argument('--train_split', type=str, default='minitrain', choices=['train', 'trainval', 'minitrain'])
-    parser.add_argument('--val_split', type=str, default='minival', choices=['val', 'minival'])
-    parser.add_argument('--test_split', type=str, default='minival', choices=['test', 'val', 'minival'])
+    parser.add_argument('--train_split', type=str, default='minitrain', choices=['train', 'trainval', 'minitrain','image_train', 'image_minitrain'])
+    parser.add_argument('--val_split', type=str, default='minival', choices=['val', 'minival', 'image_val','image_minival'])
+    parser.add_argument('--test_split', type=str, default='minitest', choices=['test', 'minitest','image_test','image_minitest'])
 
 
     parser.add_argument('--save_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')

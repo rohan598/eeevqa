@@ -136,22 +136,3 @@ if __name__ == '__main__':
 
     trainer.fit(model, datamodule=sdm)
     print("----- Trainer Fitted -----")
-
-'''
-TODO:
-Corrections:
-
--> cleanup dataset processing
--> test html method
--> test remder text method 
--> run experiments
--> zero gpu node logging only
--> clean code, add readme and save it as template for future
--> github issue tracking
-
--> hydra template
-
--> cross attention method
--> custom lightin ai loop to validate after every n steps of training
-1757~LOC
-'''

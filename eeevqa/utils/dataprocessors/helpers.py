@@ -8,15 +8,30 @@ from collections import namedtuple
 import math
 
 ######### Common Methods #########
-def input_to_image_initialization(pid_splits, params=None):
+
+def get_specific_split(idx_list, problem_list, key_attr=""):
+    final_idx_list = []
+    for i in idx_list:
+        if problem_list[i][key_attr] is None:
+            final_idx_list.append(i)
+    return final_idx_list
+
+def input_to_image_initialization(problem_list, pid_splits, params=None):
     
     data_split = params["data_split"]
     idx_list = pid_splits[data_split] 
     idx_list = [int(idx) for idx in idx_list]
     
-    if params["sample_subset"] is not None:
-        idx_list = idx_list[:params["sample_subset"]]
-        data_split = "tiny_" + params["data_source"]
+    sample_subset = params["sample_subset"]
+    if sample_subset is not None:
+        try:
+            sample_subset = int(sample_subset)
+            idx_list = idx_list[:params["sample_subset"]]
+            data_split = "tiny_" + params["data_source"]
+        except:
+            idx_list = get_specific_split(idx_list, problem_list, key_attr=sample_subset)
+            data_split = sample_subset + "_" +  params["data_source"]
+
     
     # create save directory if it does not exist
     save_dir = os.path.join(params["save_dir"], data_split)
