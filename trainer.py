@@ -28,10 +28,12 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    if args.task_name == "univqa":
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    else:
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
+    ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
+
+    # if args.task_name == "univqa":
+    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
+    # else:
+    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
 
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
@@ -55,17 +57,13 @@ if __name__ == '__main__':
 
     pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
     sdm = ScienceQADataModule(
-            model_name_or_path=args.base_model_name,
-            max_new_tokens = args.max_new_tokens,
-            max_patches = args.max_patches,
-            output_format=args.output_format,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
-            processor = processor,
             pickle_files_path = pickle_files_path,
             train_split =  train_split,
             val_split =  val_split,
             test_split =  test_split,
+            num_workers = args.num_workers,
     )
 
     sdm.setup("fit")
@@ -129,7 +127,7 @@ if __name__ == '__main__':
             accelerator="gpu",
             devices=args.gpu_cnt if torch.cuda.is_available() else None,
             strategy="ddp",  
-            precision="bf16",
+            precision="bf16-mixed",
             callbacks=[checkpoint_callback, lr_monitor, early_stopping, DeviceStatsMonitor()],
             logger = wandb_logger,
             log_every_n_steps = log_every_n_steps,

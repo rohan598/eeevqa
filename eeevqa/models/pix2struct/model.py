@@ -86,8 +86,6 @@ class Pix2StructVanilla(LightningModule):
             
             self.train_rouge_metric.update(explanation_predicted, explanation_target, self.device)
 
-            
-
         return loss
     
     def on_train_epoch_end(self):
