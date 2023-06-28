@@ -42,7 +42,7 @@ def get_pred_idx(prediction, choices, options):
     return random.choice(range(len(choices)))
 
 
-def get_answer_pair(preds, qids, problem_list, options):
+def get_answer_pair(preds, qids, problem_list, options, device):
     
     target = []
     predicted = []
@@ -55,7 +55,7 @@ def get_answer_pair(preds, qids, problem_list, options):
                                              problem_list[qids[i]]["choices"], options = options)
         predicted.append(pred_idx)
     
-    return torch.tensor(predicted), torch.tensor(target)
+    return torch.tensor(predicted, device=device), torch.tensor(target, device=device)
 
 
 def get_explanation_pair(preds, qids, problem_list):
@@ -70,23 +70,6 @@ def get_explanation_pair(preds, qids, problem_list):
         target.append(target_exp)
     
     return predicted, target
-
-
-def calculate_rouge(results, data): # expects results to be dictionary
-    rouges = []
-    for qid, output in results.items():
-        prediction = extract_explanation(output)
-        target = data[qid]["solution"]
-        target = target.strip()
-        if prediction == "":
-            continue
-        if target == "":
-            continue
-        rouge = score_rouge(target, prediction)
-        rouges.append(rouge)
-
-    avg_rouge = sum(rouges) / len(rouges)
-    return avg_rouge
 
 ########################
 ## Rouge-L
@@ -126,7 +109,7 @@ class RougeScore(Metric):
         assert type(target) == list
         return preds, target
 
-    def update(self, preds: list, target: list):
+    def update(self, preds: list, target: list, device: str):
         preds, target = self._input_format(preds, target)
         assert len(preds) == len(target)
 
@@ -140,8 +123,8 @@ class RougeScore(Metric):
             
             temp_list.append(score_rouge(preds[i],target[i]))
 
-        self.lcs += torch.tensor(sum(temp_list), dtype=torch.float)
-        self.total += torch.tensor(len(temp_list))
+        self.lcs += torch.tensor(sum(temp_list), dtype=torch.float, device=device)
+        self.total += torch.tensor(len(temp_list), device=device)
 
     def compute(self):
         return self.lcs / self.total

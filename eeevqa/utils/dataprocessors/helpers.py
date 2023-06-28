@@ -27,15 +27,16 @@ def input_to_image_initialization(problem_list, pid_splits, params=None):
         try:
             sample_subset = int(sample_subset)
             idx_list = idx_list[:params["sample_subset"]]
-            data_split = "tiny_" + params["data_source"]
+            data_split = "tiny_" + data_split
         except:
             idx_list = get_specific_split(idx_list, problem_list, key_attr=sample_subset)
-            data_split = sample_subset + "_" +  params["data_source"]
+            data_split = sample_subset + "_" +  data_split
 
     
     # create save directory if it does not exist
+
     save_dir = os.path.join(params["save_dir"], data_split)
-        
+    print(save_dir)        
     if os.path.exists(save_dir) == False:
         os.makedirs(save_dir)
         print("Save directory created")

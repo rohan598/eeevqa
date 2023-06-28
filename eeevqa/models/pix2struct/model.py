@@ -64,7 +64,7 @@ class Pix2StructVanilla(LightningModule):
         del input_dict["sample_num"]
         return self.model(**input_dict)
     
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx=0):
         outputs = self(**batch)
         loss = outputs[0]
 
@@ -77,26 +77,28 @@ class Pix2StructVanilla(LightningModule):
 
         self.log("train_loss", loss, on_step=True, on_epoch=True, sync_dist=True, batch_size = self.train_batch_size)
 
-        answer_predicted, answer_target = get_answer_pair(text_predictions, qids, self.problem_list, self.options)
+        answer_predicted, answer_target = get_answer_pair(text_predictions, qids, self.problem_list, self.options,  self.device)
 
         self.train_accuracy_metric.update(answer_predicted, answer_target)
-        
-        self.log("train_acc", self.train_accuracy_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
 
         if self.output_format != "A":
             explanation_predicted, explanation_target = get_explanation_pair(text_predictions, qids, self.problem_list)
             
-            self.train_rouge_metric.update(explanation_predicted, explanation_target)
+            self.train_rouge_metric.update(explanation_predicted, explanation_target, self.device)
 
-            self.log("train_rouge", self.train_rouge_metric, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
+            
 
         return loss
     
     def on_train_epoch_end(self):
-        pass
+                
+        self.log("train_acc", self.train_accuracy_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
+        
+        if self.output_format != "A":
+            self.log("train_rouge", self.train_rouge_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.train_batch_size)
 
 
-    def validation_step(self, batch, batch_idx, dataloader_idx=0):
+    def validation_step(self, batch, batch_idx=0):
         outputs = self(**batch)
         val_loss = outputs[0]
         
@@ -109,21 +111,24 @@ class Pix2StructVanilla(LightningModule):
 
         self.log("val_loss", val_loss, on_epoch=True, sync_dist=True, batch_size = self.eval_batch_size)
 
-        answer_predicted, answer_target = get_answer_pair(text_predictions, qids, self.problem_list, self.options)
+        answer_predicted, answer_target = get_answer_pair(text_predictions, qids, self.problem_list, self.options, self.device)
 
         self.val_accuracy_metric.update(answer_predicted, answer_target)
-        
-        self.log("val_acc", self.val_accuracy_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+
 
         if self.output_format != "A":
             explanation_predicted, explanation_target = get_explanation_pair(text_predictions, qids, self.problem_list)
 
-            self.val_rouge_metric.update(explanation_predicted, explanation_target)
+            self.val_rouge_metric.update(explanation_predicted, explanation_target,  self.device)
             
-            self.log("val_rouge", self.val_rouge_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+
     
     def on_validation_epoch_end(self):
-        pass
+        
+        self.log("val_acc", self.val_accuracy_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
+        
+        if self.output_format != "A":
+            self.log("val_rouge", self.val_rouge_metric, on_epoch=True, prog_bar=True, sync_dist=True, batch_size = self.eval_batch_size)
 
     def configure_optimizers(self):
         """Prepare optimizer and schedule (linear warmup and decay)"""
@@ -132,6 +137,7 @@ class Pix2StructVanilla(LightningModule):
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
         
         if self.skip_scheduler == False:
+            optimizer = Adafactor(model.parameters(), scale_parameter=False, relative_step=False, lr=self.learning_rate, weight_decay=self.weight_decay)
             scheduler = WarmupCosineSchedule(
                 optimizer=optimizer, 
                 warmup_steps=self.warmup_steps, 

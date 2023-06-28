@@ -142,8 +142,9 @@ class ScienceQADataModule(LightningDataModule):
         new_batch["flattened_patches"] = torch.stack(new_batch["flattened_patches"])
         new_batch["attention_mask"] = torch.stack(new_batch["attention_mask"])
         new_batch["sample_num"] = [item["sample_num"] for item in batch]
-        
-        # TODO - add code for text context and lecture
+        # TODO can be made faster with torch stacking
+        # TODO can be made faster by processing everything in advance
+    
 
         return new_batch
 

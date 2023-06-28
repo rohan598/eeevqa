@@ -7,6 +7,7 @@ from datetime import datetime
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import DeviceStatsMonitor
 
 from pytorch_lightning.loggers import WandbLogger
 import torch
@@ -128,9 +129,11 @@ if __name__ == '__main__':
             accelerator="gpu",
             devices=args.gpu_cnt if torch.cuda.is_available() else None,
             strategy="ddp",  
-            callbacks=[checkpoint_callback, lr_monitor, early_stopping],
+            precision="bf16",
+            callbacks=[checkpoint_callback, lr_monitor, early_stopping, DeviceStatsMonitor()],
             logger = wandb_logger,
-            log_every_n_steps = log_every_n_steps
+            log_every_n_steps = log_every_n_steps,
+            profiler="simple"
         )
     print("----- Trainer Setup -----")
 
