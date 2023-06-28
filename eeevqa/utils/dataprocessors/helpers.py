@@ -381,7 +381,7 @@ def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, ou
 
     return scienceqa_example
 
-def create_one_scienceqa_example_v2(problem_list, img_filename="", sample_num=1, output_format="AE", max_patches = 4096, max_new_tokens = 512, options = None, processor=None, ScienceQA = None):
+def create_one_scienceqa_example_v2(text_data, img_filename="", sample_num=1, max_patches = 4096, processor=None, ScienceQA = None):
     
     #input
     image = Image.open(f"{img_filename}.jpg")
@@ -389,21 +389,16 @@ def create_one_scienceqa_example_v2(problem_list, img_filename="", sample_num=1,
     encoding = {k:v.squeeze() for k,v in encoding.items()} 
     flattened_patches = encoding["flattened_patches"]
     attention_mask = encoding["attention_mask"]
-    
-    # Outputs
-    if output_format == 'A':
-        raw_output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
-    elif output_format == 'AE':
-        raw_output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
-    elif output_format == 'EA':
-        raw_output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
 
-    raw_output = raw_output.replace("  ", " ").strip()
-    if raw_output.endswith("BECAUSE:"):
-        raw_output = raw_output.replace("BECAUSE:", "").strip()
-        
-        
-    output = processor(text=raw_output, padding=True, truncation=True, return_tensors="pt", add_special_tokens=True, max_length=max_new_tokens).input_ids
+    raw_output = text_data["raw_output"][sample_num]
+    output = text_data["targets"][sample_num]
     
     scienceqa_example = ScienceQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
+
     return scienceqa_example
+
+# saving functionality
+def save_dataset(dataset, save_dir="", filename=""):
+    pickle_filename = os.path.join(save_dir, filename)
+    with open(pickle_filename, 'wb') as f:
+        pickle.dump(dataset, f)

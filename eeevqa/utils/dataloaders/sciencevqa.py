@@ -73,7 +73,8 @@ class ScienceQADataModule(LightningDataModule):
 
         new_batch["flattened_patches"] = torch.stack(new_batch["flattened_patches"])
         new_batch["attention_mask"] = torch.stack(new_batch["attention_mask"])
-        new_batch["labels"] = torch.cat(new_batch["labels"], dim=0)
+        new_batch["labels"] = torch.stack(new_batch["labels"])
+
         return new_batch
 
     def train_dataloader(self):
@@ -90,9 +91,9 @@ class ScienceQADataModule(LightningDataModule):
 
 def collator(batch):
     new_batch = {"flattened_patches":[],
-                     "attention_mask":[], 
-                     "labels":[],
-                     "sample_num":[]}
+                    "attention_mask":[], 
+                    "labels":[],
+                    "sample_num":[]}
 
     for item in batch:
         new_batch["flattened_patches"].append(item.flattened_patches)

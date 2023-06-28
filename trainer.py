@@ -30,11 +30,6 @@ if __name__ == '__main__':
 
     ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
 
-    # if args.task_name == "univqa":
-    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    # else:
-    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
-
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
     print("----- Read Dataset -----") 

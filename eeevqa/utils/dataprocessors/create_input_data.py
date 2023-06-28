@@ -14,7 +14,8 @@ import pickle
 from collections import namedtuple
 from transformers import AutoProcessor
 
-from eeevqa.utils.dataprocessors.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, create_one_scienceqa_example_v2
+from eeevqa.utils.dataprocessors.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, create_one_scienceqa_example_v2, save_dataset
+
 from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
 from eeevqa.utils.args import parse_args, parse_boolean
 
@@ -73,37 +74,20 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     
     dataset = []
     ScienceQA = params["ScienceQA"]
+
+    # load text data
+    with open(params["text_data_file"], 'rb') as f:
+        text_data = pickle.load(f)
+
     for sample_num in idx_list:
         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
-        dataset.append(create_one_scienceqa_example_v2(problem_list, img_filename=img_filename, \
-                                                    sample_num=sample_num, output_format=params["output_format"], \
-                                                    options = params["options"], 
-                                                    max_new_tokens = params["max_new_tokens"],
+        dataset.append(create_one_scienceqa_example_v2(text_data,
+                                                    img_filename=img_filename, 
+                                                    sample_num=sample_num,
                                                     max_patches=params["max_patches"],
                                                     processor=params["processor"],
                                                     ScienceQA = ScienceQA))
     return dataset
-
-# def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
-    
-#     data_split, idx_list, save_dir, _ = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params) 
-    
-#     dataset = []
-#     ScienceQA = params["ScienceQA"]
-#     for sample_num in idx_list:
-#         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
-#         dataset.append(create_one_scienceqa_example(problem_list, img_filename=img_filename, \
-#                                                     sample_num=sample_num, output_format=params["output_format"], \
-#                                                     options = params["options"], preprocess_image = params["preprocess_image"],
-#                                                     task_name = params["task_name"],
-#                                                     ScienceQA = ScienceQA))
-#     return dataset
-        
-# saving functionality
-def save_dataset(dataset, save_dir="", filename=""):
-    pickle_filename = os.path.join(save_dir, filename)
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(dataset, f)
 
 if __name__ == '__main__':
     
@@ -112,10 +96,6 @@ if __name__ == '__main__':
     print("----- Parsed Arguments -----")
 
     ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
-    # if args.task_name == "univqa":
-    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    # else:
-    #     ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
     
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
@@ -144,6 +124,7 @@ if __name__ == '__main__':
         "preprocess_image":None,
         "max_patches":args.max_patches,
         "max_new_tokens":args.max_new_tokens,
+        "text_data_path":os.path.join(args.data_root, args.pickle_files_dir,f"text_data_{args.max_new_tokens}.pkl")
         "processor":processor,
         "ScienceQA":ScienceQA
     }
