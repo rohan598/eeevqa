@@ -28,7 +28,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
 
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
@@ -59,6 +59,7 @@ if __name__ == '__main__':
             val_split =  val_split,
             test_split =  test_split,
             num_workers = args.num_workers,
+            pin_memory = True if device == "cuda" else False
     )
 
     sdm.setup("fit")
@@ -123,7 +124,7 @@ if __name__ == '__main__':
             devices=args.gpu_cnt if torch.cuda.is_available() else None,
             strategy="ddp",  
             precision="bf16-mixed",
-            callbacks=[checkpoint_callback, lr_monitor, early_stopping, DeviceStatsMonitor()],
+            callbacks=[checkpoint_callback, lr_monitor, early_stopping],
             logger = wandb_logger,
             log_every_n_steps = log_every_n_steps,
             profiler="simple"

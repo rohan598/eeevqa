@@ -32,6 +32,7 @@ class ScienceQADataModule(LightningDataModule):
             val_split:str = "minival",
             test_split:str = "minitest",
             num_workers:int = 8,
+            pin_memory:bool = False,
             **kwargs,
     ):
         super().__init__()
@@ -42,6 +43,7 @@ class ScienceQADataModule(LightningDataModule):
         self.val_split = val_split
         self.test_split = test_split
         self.num_workers = num_workers
+        self.pin_memory = pin_memory
 
     def prepare_data(self):
         pass
@@ -81,7 +83,7 @@ class ScienceQADataModule(LightningDataModule):
         return DataLoader(self.train_dataset, shuffle=True, batch_size=self.train_batch_size, collate_fn=self.collator, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.eval_batch_size, collate_fn=self.collator, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=self.eval_batch_size, collate_fn=self.collator, num_workers=self.num_workers, pin_memory = self.pin_memory)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.eval_batch_size, collate_fn=self.collator, num_workers=self.num_workers)

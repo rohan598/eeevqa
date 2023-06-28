@@ -6,6 +6,7 @@ import pdfkit
 import torchvision.transforms as transforms
 from collections import namedtuple
 import math
+import pickle
 
 ######### Common Methods #########
 
@@ -343,45 +344,7 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
 
 ######### ScienceQA Dataset methods #########
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None, ScienceQA=None):
-    
-    # header text
-    header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
-
-    text_context =  problem_list[sample_num]["hint"] 
-    lecture =  problem_list[sample_num]["lecture"] 
-    
-    #input
-    pil_to_tensor_transform = transforms.Compose([
-    transforms.PILToTensor()
-    ])
-    with Image.open(f"{img_filename}.jpg") as img:
-        image = pil_to_tensor_transform(img)
-        image_mean = 0
-        image_std = 0
-        if preprocess_image is not None:
-            image, image_mean, image_std = preprocess_image(image)
-
-    # Outputs
-    if output_format == 'A':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
-    elif output_format == 'AE':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
-    elif output_format == 'EA':
-        output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
-
-    output = output.replace("  ", " ").strip()
-    if output.endswith("BECAUSE:"):
-        output = output.replace("BECAUSE:", "").strip()
-
-    if task_name == "univqa":
-        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
-    else:
-        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
-
-    return scienceqa_example
-
-def create_one_scienceqa_example_v2(text_data, img_filename="", sample_num=1, max_patches = 4096, processor=None, ScienceQA = None):
+def create_one_scienceqa_example(text_data, img_filename="", sample_num=1, max_patches = 4096, processor=None, TrainQA = None):
     
     #input
     image = Image.open(f"{img_filename}.jpg")
@@ -391,9 +354,9 @@ def create_one_scienceqa_example_v2(text_data, img_filename="", sample_num=1, ma
     attention_mask = encoding["attention_mask"]
 
     raw_output = text_data["raw_output"][sample_num]
-    output = text_data["targets"][sample_num]
+    output = text_data["targets"].input_ids[sample_num]
     
-    scienceqa_example = ScienceQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
+    scienceqa_example = TrainQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
 
     return scienceqa_example
 

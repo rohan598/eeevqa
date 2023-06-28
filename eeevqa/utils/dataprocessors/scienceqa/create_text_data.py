@@ -8,12 +8,14 @@ root = rootutils.setup_root(
 )
 
 import os
+from transformers import AutoProcessor
 
+from eeevqa.utils.dataloaders.raw_data import read_problem_list
 from eeevqa.utils.dataprocessors.helpers import save_dataset
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # make all text targets at once
-def create_text_data(problem_list, output_format="AE", max_new_tokens=512, processor=None):
+def create_text_data(problem_list, output_format="AE", max_new_tokens=512, options = None, processor=None):
     
     text_data = {
         "targets": [],
@@ -62,6 +64,7 @@ if __name__ == '__main__':
     text_data = create_text_data(problem_list,
                             output_format=args.output_format, 
                             max_new_tokens=args.max_new_tokens, 
+                            options = args.options,
                             processor=processor)
     print("----- Created Text Dataset -----") 
 

@@ -180,7 +180,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
     
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
     print("----- Read Dataset -----") 

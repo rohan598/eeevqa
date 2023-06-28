@@ -73,7 +73,7 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     data_split, idx_list, save_dir, _ = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params) 
     
     dataset = []
-    ScienceQA = params["ScienceQA"]
+    TrainQA = params["TrainQA"]
 
     # load text data
     with open(params["text_data_file"], 'rb') as f:
@@ -81,12 +81,12 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
 
     for sample_num in idx_list:
         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
-        dataset.append(create_one_scienceqa_example_v2(text_data,
+        dataset.append(create_one_scienceqa_example(text_data,
                                                     img_filename=img_filename, 
                                                     sample_num=sample_num,
                                                     max_patches=params["max_patches"],
                                                     processor=params["processor"],
-                                                    ScienceQA = ScienceQA))
+                                                    TrainQA = TrainQA))
     return dataset
 
 if __name__ == '__main__':
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    ScienceQA = namedtuple("ScienceQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
     
     captions_dict = read_captions(args.data_root, args.captions_filename)
     problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
@@ -124,9 +124,9 @@ if __name__ == '__main__':
         "preprocess_image":None,
         "max_patches":args.max_patches,
         "max_new_tokens":args.max_new_tokens,
-        "text_data_path":os.path.join(args.data_root, args.pickle_files_dir,f"text_data_{args.max_new_tokens}.pkl")
+        "text_data_file":os.path.join(args.data_root, args.pickle_files_dir,f"text_data_{args.max_new_tokens}.pkl"),
         "processor":processor,
-        "ScienceQA":ScienceQA
+        "TrainQA":TrainQA
     }
 
     # pipeline for image dataset generation
