@@ -10,7 +10,7 @@ root = rootutils.setup_root(
 import os
 from transformers import AutoProcessor
 
-from eeevqa.utils.dataloaders.raw_data import read_problem_list
+from eeevqa.utils.dataloaders.raw_data import read_json_file
 from eeevqa.utils.dataprocessors.helpers import save_dataset
 from eeevqa.utils.args import parse_args, parse_boolean
 
@@ -24,14 +24,14 @@ def create_text_data(problem_list, output_format="AE", max_new_tokens=512, optio
     }
 
     # group all text inputs
-    for sample_num in range(1, len(problem_list.keys())+1):  
+    for sample_num in range(1, len(problem_list)+1):  
         # Outputs
         if output_format == 'A':
-            raw_output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
+            raw_output = f"Answer: The answer is {options[problem_list[str(sample_num)]['answer']]}."
         elif output_format == 'AE':
-            raw_output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
+            raw_output = f"Answer: The answer is {options[problem_list[str(sample_num)]['answer']]}. BECAUSE: {problem_list[str(sample_num)]['solution']}"
         elif output_format == 'EA':
-            raw_output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
+            raw_output = f"Answer: {problem_list[str(sample_num)]['solution']} The answer is {options[problem_list[str(sample_num)]['answer']]}."
 
         raw_output = raw_output.replace("  ", " ").strip()
         if raw_output.endswith("BECAUSE:"):
@@ -54,7 +54,8 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+    problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)
+    problem_list = read_json_file(problem_list_path)
 
     save_dir = os.path.join(args.data_root, args.pickle_files_dir)
 

@@ -12,7 +12,7 @@ import warnings
 from regex import P
 
 from sentence_transformers import SentenceTransformer
-from eeevqa.utils.eval.metrics import calculate_bleu, calculate_rouge, calculate_similariry
+from eeevqa.utils.eval.scienceqa.metrics import calculate_bleu, calculate_rouge, calculate_similariry
 
 warnings.filterwarnings("ignore")
 

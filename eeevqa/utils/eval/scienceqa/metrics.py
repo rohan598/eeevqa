@@ -47,12 +47,12 @@ def get_answer_pair(preds, qids, problem_list, options, device):
     target = []
     predicted = []
     for i in range(len(preds)):
-        target_idx = problem_list[qids[i]]["answer"]
+        target_idx = problem_list[str(qids[i])]["answer"]
         target.append(target_idx)
 
 
         pred_idx = get_pred_idx(extract_answer(preds[i]), \
-                                             problem_list[qids[i]]["choices"], options = options)
+                                             problem_list[str(qids[i])]["choices"], options = options)
         predicted.append(pred_idx)
     
     return torch.tensor(predicted, device=device), torch.tensor(target, device=device)
@@ -66,7 +66,7 @@ def get_explanation_pair(preds, qids, problem_list):
         pred_exp = extract_explanation(preds[i])
         predicted.append(pred_exp)
         
-        target_exp = problem_list[qids[i]]["solution"].strip()
+        target_exp = problem_list[str(qids[i])]["solution"].strip()
         target.append(target_exp)
     
     return predicted, target

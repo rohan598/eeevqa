@@ -18,10 +18,10 @@ from pytorch_lightning import Trainer, seed_everything
 from transformers import AutoProcessor, Pix2StructForConditionalGeneration
 
 from eeevqa.utils.args import parse_args, parse_boolean
-from eeevqa.utils.dataloaders.raw_data import read_problem_list
+from eeevqa.utils.dataloaders.raw_data import read_json_file
 from eeevqa.utils.dataloaders.sciencevqa import create_eval_dataloader
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
-from eeevqa.utils.eval.metrics import get_pred_idx, extract_answer, extract_explanation
+from eeevqa.utils.eval.scienceqa.metrics import get_pred_idx, extract_answer, extract_explanation
 
 def get_result_filepath(args, model_name, result_type):
     result_filename = "{}_{}_{}_{}_{}_{}_seed_{}.json".format(result_type, model_name, args.eval_split, args.output_format, args.max_patches, args.max_new_tokens, args.seed)
@@ -69,8 +69,8 @@ def gen_results(model, eval_dataloader, problem_list, args):
         text_predictions = processor.batch_decode(predictions, skip_special_tokens=True)[0]
 
         # print(text_predictions)
-        choices = problem_list[qid]["choices"]
-        answer = problem_list[qid]["answer"]  # 0, 1, ..., 4 
+        choices = problem_list[str(qid)]["choices"]
+        answer = problem_list[str(qid)]["answer"]  # 0, 1, ..., 4 
         options = args.options
 
         pred_answer = get_pred_idx(
@@ -86,14 +86,14 @@ def gen_results(model, eval_dataloader, problem_list, args):
 
         results[qid]["pred_answer"] = pred_answer
         results[qid]["pred_exp"] = pred_exp
-        results[qid]["no_context"] = True if (not problem_list[qid]["hint"] and not problem_list[qid]["image"]) else False
-        results[qid]["has_text"] = True if problem_list[qid]["hint"] else False
-        results[qid]["has_image"] = True if problem_list[qid]["image"] else False
-        results[qid]["has_text_image"] = True if (problem_list[qid]["hint"] and problem_list[qid]["image"]) else False
-        results[qid]["grade"] = problem_list[qid]["grade"]
-        results[qid]["subject"] = problem_list[qid]["subject"]
-        results[qid]["answer"] = problem_list[qid]["answer"]
-        results[qid]["true_false"] = (problem_list[qid]["answer"] == results[qid]["pred_answer"])
+        results[qid]["no_context"] = True if (not problem_list[str(qid)]["hint"] and not problem_list[str(qid)]["image"]) else False
+        results[qid]["has_text"] = True if problem_list[str(qid)]["hint"] else False
+        results[qid]["has_image"] = True if problem_list[str(qid)]["image"] else False
+        results[qid]["has_text_image"] = True if (problem_list[str(qid)]["hint"] and problem_list[str(qid)]["image"]) else False
+        results[qid]["grade"] = problem_list[str(qid)]["grade"]
+        results[qid]["subject"] = problem_list[str(qid)]["subject"]
+        results[qid]["answer"] = problem_list[str(qid)]["answer"]
+        results[qid]["true_false"] = (problem_list[str(qid)]["answer"] == results[qid]["pred_answer"])
         
         if cnt%50==0:
             print(f"Completed {cnt}")
@@ -182,7 +182,9 @@ if __name__ == '__main__':
 
     TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
     
-    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+    problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)
+    problem_list = read_json_file(problem_list_path)
+
     print("----- Read Dataset -----") 
 
     # load processor

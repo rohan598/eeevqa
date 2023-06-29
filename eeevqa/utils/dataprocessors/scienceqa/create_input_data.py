@@ -14,9 +14,10 @@ import pickle
 from collections import namedtuple
 from transformers import AutoProcessor
 
-from eeevqa.utils.dataprocessors.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, create_one_scienceqa_example_v2, save_dataset
+from eeevqa.utils.dataprocessors.scienceqa.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, save_dataset
 
-from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
+from eeevqa.utils.dataloaders.raw_data import read_json_file
+
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # Convert Input to Image HTML pipeline
@@ -30,7 +31,7 @@ def convert_input_to_img_v1(problem_list, pid_splits, params=None):
         html_file = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
 
         # save tmp html file
-        save_html_file(html_file, data_split, sample_num, save_dir=save_dir)
+        save_html_file(html_file, data_split, str(sample_num), save_dir=save_dir)
         
         # tmp and final filenames
         tmp_hpi_filename = os.path.join(save_dir, f"{data_split}_{sample_num}")
@@ -59,7 +60,7 @@ def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     
     data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params)
     image_dir = os.path.join(params["data_root"], params["data_source"])
-    print(image_dir)
+
     for sample_num in idx_list:
         
         # call image converter
@@ -97,9 +98,14 @@ if __name__ == '__main__':
 
     TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
     
-    captions_dict = read_captions(args.data_root, args.captions_filename)
-    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
-    pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
+    captions_path = os.path.join(args.data_root, args.captions_filename)
+    problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)
+    pid_splits_path = os.path.join(args.data_root, args.json_files_dir, args.pidsplits_filename)
+
+    captions_dict = dict(read_json_file(captions_path)["captions"])
+    problem_list = read_json_file(problem_list_path)
+    pid_splits = read_json_file(pid_splits_path)
+
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
     print("----- Read Dataset -----") 
