@@ -6,13 +6,14 @@ import pdfkit
 import torchvision.transforms as transforms
 from collections import namedtuple
 import math
+import pickle
 
 ######### Common Methods #########
 
 def get_specific_split(idx_list, problem_list, key_attr=""):
     final_idx_list = []
     for i in idx_list:
-        if problem_list[i][key_attr] is None:
+        if problem_list[str(i)][key_attr] is None:
             final_idx_list.append(i)
     return final_idx_list
 
@@ -95,41 +96,41 @@ def create_html_template_modular(tags=[]):
 
     return html_template
 
-def create_html_file_modular(params, df, sample_num=None, layout_type=1):
+def create_html_file_modular(params, problem_list, sample_num=1, layout_type=1):
 
     # create individual tags
     
     # Question
     if params["set_question_as_header"] == False:
-        question_tag = create_question_tag().format(question_content = df[sample_num]["question"])
+        question_tag = create_question_tag().format(question_content = problem_list[str(sample_num)]["question"])
         
     else:
         question_tag = ""
         
     # Choices
     if params["set_question_as_header"] == False:
-        choice_tag = create_choice_tag().format(choice_content = get_choice_text(df[sample_num], params["options"]))
+        choice_tag = create_choice_tag().format(choice_content = get_choice_text(problem_list[str(sample_num)], params["options"]))
         
     else:
         choice_tag = ""
         
     # Image source
     if df[sample_num]["image"] is not None:
-        img_tag = create_img_tag().format(img_source = os.path.join(os.getcwd(), "data", df[sample_num]["split"], \
-                              str(sample_num), df[sample_num]['image']))
+        img_tag = create_img_tag().format(img_source = os.path.join(os.getcwd(), "data", problem_list[str(sample_num)]["split"], \
+                              str(sample_num), problem_list[str(sample_num)]['image']))
     else:
         img_tag = ""
 
     # Context
-    if df[sample_num]["hint"] is not None and params["skip_text_context"] == False:
-        context_tag = create_context_tag().format(context_content = df[sample_num]["hint"])    
+    if problem_list[str(sample_num)]["hint"] is not None and params["skip_text_context"] == False:
+        context_tag = create_context_tag().format(context_content = problem_list[str(sample_num)]["hint"])    
     else:
         context_tag = ""
 
 
     # Lecture
-    if df[sample_num]["lecture"] is not None and params["skip_lecture"] == False:
-        lecture_tag = create_lecture_tag().format(lecture_content = df[sample_num]['lecture']) 
+    if problem_list[str(sample_num)]["lecture"] is not None and params["skip_lecture"] == False:
+        lecture_tag = create_lecture_tag().format(lecture_content = problem_list[str(sample_num)]['lecture']) 
 
     else:
         lecture_tag = ""
@@ -292,23 +293,23 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
     
     # combine question and choice, strip all leading and trailing spaces, 
     # remove all newlines
-    question_text = problem_list[sample_num]["question"]
-    choice_text = get_choice_text(problem_list[sample_num], params["options"])
+    question_text = problem_list[str(sample_num)]["question"]
+    choice_text = get_choice_text(problem_list[str(sample_num)], params["options"])
     question_choice_text = question_text + " " + choice_text
     
     # combine lecture and text context, strip all leading and trailing spaces, 
     # remove all newlines
 
     # Context
-    if problem_list[sample_num]["hint"] is not None and params["skip_text_context"] == False:
-        hint_text = ' '.join(problem_list[sample_num]["hint"].split("/n")) 
+    if problem_list[str(sample_num)]["hint"] is not None and params["skip_text_context"] == False:
+        hint_text = ' '.join(problem_list[str(sample_num)]["hint"].split("/n")) 
     else:
         hint_text = ""
 
 
     # Lecture
-    if problem_list[sample_num]["lecture"] is not None and params["skip_lecture"] == False:
-        lecture_text = ' '.join(problem_list[sample_num]["lecture"].split("/n"))
+    if problem_list[str(sample_num)]["lecture"] is not None and params["skip_lecture"] == False:
+        lecture_text = ' '.join(problem_list[str(sample_num)]["lecture"].split("/n"))
 
     else:
         lecture_text = ""
@@ -343,40 +344,24 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
 
 ######### ScienceQA Dataset methods #########
 # Create ScienceQA dataset
-def create_one_scienceqa_example(problem_list, img_filename="", sample_num=1, output_format="AE", options = None, preprocess_image=None, task_name=None, ScienceQA=None):
-    
-    # header text
-    header_text = problem_list[sample_num]["question"] + " " + get_choice_text(problem_list[sample_num], options)
-
-    text_context =  problem_list[sample_num]["hint"] 
-    lecture =  problem_list[sample_num]["lecture"] 
+def create_one_scienceqa_example(text_data, img_filename="", sample_num=1, max_patches = 4096, processor=None, TrainQA = None):
     
     #input
-    pil_to_tensor_transform = transforms.Compose([
-    transforms.PILToTensor()
-    ])
-    with Image.open(f"{img_filename}.jpg") as img:
-        image = pil_to_tensor_transform(img)
-        image_mean = 0
-        image_std = 0
-        if preprocess_image is not None:
-            image, image_mean, image_std = preprocess_image(image)
+    image = Image.open(f"{img_filename}.jpg")
+    encoding = processor(images=image, return_tensors="pt", add_special_tokens=True, max_patches=max_patches)
+    encoding = {k:v.squeeze() for k,v in encoding.items()} 
+    flattened_patches = encoding["flattened_patches"]
+    attention_mask = encoding["attention_mask"]
 
-    # Outputs
-    if output_format == 'A':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}."
-    elif output_format == 'AE':
-        output = f"Answer: The answer is {options[problem_list[sample_num]['answer']]}. BECAUSE: {problem_list[sample_num]['solution']}"
-    elif output_format == 'EA':
-        output = f"Answer: {problem_list[sample_num]['solution']} The answer is {options[problem_list[sample_num]['answer']]}."
-
-    output = output.replace("  ", " ").strip()
-    if output.endswith("BECAUSE:"):
-        output = output.replace("BECAUSE:", "").strip()
-
-    if task_name == "univqa":
-        scienceqa_example = ScienceQA(sample_num, header_text, image, image_mean, image_std, output)
-    else:
-        scienceqa_example = ScienceQA(sample_num, header_text, image, text_context, lecture, image_mean, image_std, output)
+    raw_output = text_data["raw_output"][sample_num]
+    output = text_data["targets"].input_ids[sample_num]
+    
+    scienceqa_example = TrainQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
 
     return scienceqa_example
+
+# saving functionality
+def save_dataset(dataset, save_dir="", filename=""):
+    pickle_filename = os.path.join(save_dir, filename)
+    with open(pickle_filename, 'wb') as f:
+        pickle.dump(dataset, f)

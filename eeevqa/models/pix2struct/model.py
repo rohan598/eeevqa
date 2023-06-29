@@ -9,7 +9,7 @@ import torch
 
 from functools import reduce
 
-from eeevqa.utils.eval.metrics import create_result_dict, calculate_acc, calculate_rouge, get_answer_pair, get_explanation_pair, Accuracy, RougeScore
+from eeevqa.utils.eval.scienceqa.metrics import create_result_dict, calculate_acc, calculate_rouge, get_answer_pair, get_explanation_pair, Accuracy, RougeScore
 
 from eeevqa.utils.optimizers import WarmupCosineSchedule
 
@@ -86,8 +86,6 @@ class Pix2StructVanilla(LightningModule):
             
             self.train_rouge_metric.update(explanation_predicted, explanation_target, self.device)
 
-            
-
         return loss
     
     def on_train_epoch_end(self):
@@ -134,8 +132,9 @@ class Pix2StructVanilla(LightningModule):
         """Prepare optimizer and schedule (linear warmup and decay)"""
 
         model = self.model
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-        
+        # optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
+        optimizer = Adafactor(model.parameters(), scale_parameter=False, relative_step=False, lr=self.learning_rate, weight_decay=self.weight_decay)
+
         if self.skip_scheduler == False:
             optimizer = Adafactor(model.parameters(), scale_parameter=False, relative_step=False, lr=self.learning_rate, weight_decay=self.weight_decay)
             scheduler = WarmupCosineSchedule(

@@ -12,9 +12,12 @@ import numpy as np
 import pickle
 
 from collections import namedtuple
+from transformers import AutoProcessor
 
-from eeevqa.utils.dataprocessors.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example
-from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list, read_pid_splits
+from eeevqa.utils.dataprocessors.scienceqa.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, save_dataset
+
+from eeevqa.utils.dataloaders.raw_data import read_json_file
+
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # Convert Input to Image HTML pipeline
@@ -28,7 +31,7 @@ def convert_input_to_img_v1(problem_list, pid_splits, params=None):
         html_file = create_html_file_modular(params, problem_list, sample_num=sample_num, layout_type = params["layout_type"])
 
         # save tmp html file
-        save_html_file(html_file, data_split, sample_num, save_dir=save_dir)
+        save_html_file(html_file, data_split, str(sample_num), save_dir=save_dir)
         
         # tmp and final filenames
         tmp_hpi_filename = os.path.join(save_dir, f"{data_split}_{sample_num}")
@@ -57,7 +60,7 @@ def convert_input_to_img_v2(problem_list, pid_splits, params=None):
     
     data_split, idx_list, save_dir, stats_dict = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params)
     image_dir = os.path.join(params["data_root"], params["data_source"])
-    print(image_dir)
+
     for sample_num in idx_list:
         
         # call image converter
@@ -71,21 +74,21 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
     data_split, idx_list, save_dir, _ = input_to_image_initialization(problem_list=problem_list, pid_splits=pid_splits, params=params) 
     
     dataset = []
-    ScienceQA = params["ScienceQA"]
+    TrainQA = params["TrainQA"]
+
+    # load text data
+    with open(params["text_data_file"], 'rb') as f:
+        text_data = pickle.load(f)
+
     for sample_num in idx_list:
         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
-        dataset.append(create_one_scienceqa_example(problem_list, img_filename=img_filename, \
-                                                    sample_num=sample_num, output_format=params["output_format"], \
-                                                    options = params["options"], preprocess_image = params["preprocess_image"],
-                                                    task_name = params["task_name"],
-                                                    ScienceQA = ScienceQA))
+        dataset.append(create_one_scienceqa_example(text_data,
+                                                    img_filename=img_filename, 
+                                                    sample_num=sample_num,
+                                                    max_patches=params["max_patches"],
+                                                    processor=params["processor"],
+                                                    TrainQA = TrainQA))
     return dataset
-        
-# saving functionality
-def save_dataset(dataset, save_dir="", filename=""):
-    pickle_filename = os.path.join(save_dir, filename)
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(dataset, f)
 
 if __name__ == '__main__':
     
@@ -93,18 +96,21 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    if args.task_name == "univqa":
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    else:
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
+    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
     
-    captions_dict = read_captions(args.data_root, args.captions_filename)
-    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
-    pid_splits = read_pid_splits(os.path.join(args.data_root, args.json_files_dir), args.pidsplits_filename)
+    captions_path = os.path.join(args.data_root, args.captions_filename)
+    problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)
+    pid_splits_path = os.path.join(args.data_root, args.json_files_dir, args.pidsplits_filename)
+
+    captions_dict = dict(read_json_file(captions_path)["captions"])
+    problem_list = read_json_file(problem_list_path)
+    pid_splits = read_json_file(pid_splits_path)
+
     save_dir = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
 
     print("----- Read Dataset -----") 
 
+    processor = AutoProcessor.from_pretrained(args.base_model_name)
     # set common params 
     params = {
         "task_name":args.task_name,
@@ -122,7 +128,11 @@ if __name__ == '__main__':
         "skip_lecture":parse_boolean(args.skip_lecture),
         "visualize":parse_boolean(args.visualize_gen),
         "preprocess_image":None,
-        "ScienceQA":ScienceQA
+        "max_patches":args.max_patches,
+        "max_new_tokens":args.max_new_tokens,
+        "text_data_file":os.path.join(args.data_root, args.pickle_files_dir,f"text_data_{args.max_new_tokens}.pkl"),
+        "processor":processor,
+        "TrainQA":TrainQA
     }
 
     # pipeline for image dataset generation

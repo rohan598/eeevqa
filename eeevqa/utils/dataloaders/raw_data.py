@@ -3,17 +3,8 @@ import pickle
 import pandas as pd
 import json 
 
-def read_captions(data_root, captions_filename):
-    captions_dict = dict(pd.read_json(os.path.join(os.getcwd(), data_root, captions_filename))["captions"])
-    return captions_dict
-
-def read_problem_list(json_files_path, problems_filename):
-    
-    problem_list = pd.read_json(os.path.join(os.getcwd(), json_files_path, problems_filename))
-    return problem_list
-
-def read_pid_splits(json_files_path, pidsplits_filename):
-    with open(os.path.join(os.getcwd(), json_files_path, pidsplits_filename)) as json_file:
+def read_json_file(filepath):
+    with open(filepath) as json_file:
         data = json.load(json_file)
     return data
 
@@ -27,18 +18,18 @@ def load_data_split(pickle_files_path, split):
     dataset = load_pickle_dataset(pickle_files_path, source=split)
     return dataset
 
-def load_data(data_root, captions_filename, json_files_path, problems_filename, save_dir, pickle_files_path, train_split, val_split, test_split):
+# def load_data(data_root, captions_filename, json_files_path, problems_filename, save_dir, pickle_files_path, train_split, val_split, test_split):
 
-    # read_captions
-    captions_dict = read_captions(data_root, captions_filename)
+#     # read_captions
+#     captions_dict = read_captions(data_root, captions_filename)
 
-    # read_problem_list
-    problem_list = read_problem_list(json_files_path, problems_filename)
+#     # read_problem_list
+#     problem_list = read_problem_list(json_files_path, problems_filename)
 
-    train_dataset = load_pickle_dataset(pickle_files_path, source=train_split)
+#     train_dataset = load_pickle_dataset(pickle_files_path, source=train_split)
 
-    val_dataset = load_pickle_dataset(pickle_files_path, source=val_split)
+#     val_dataset = load_pickle_dataset(pickle_files_path, source=val_split)
 
-    test_dataset = load_pickle_dataset(pickle_files_path, source=test_split)
+#     test_dataset = load_pickle_dataset(pickle_files_path, source=test_split)
 
-    return captions_dict, problem_list, train_dataset, val_dataset, test_dataset
+#     return captions_dict, problem_list, train_dataset, val_dataset, test_dataset

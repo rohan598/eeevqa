@@ -1,10 +1,7 @@
 from eeevqa.utils.dataloaders.raw_data import (
-    read_captions,
-    read_problem_list,
-    read_pid_splits,
+    read_json_file,
     load_pickle_dataset,
-    load_data_split,
-    load_data,
+    load_data_split
 )
 
 from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule

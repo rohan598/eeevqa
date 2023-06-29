@@ -1,4 +1,4 @@
-from eeevqa.utils.dataprocessors.helpers import (
+from eeevqa.utils.dataprocessors.scienceqa.helpers import (
     input_to_image_initialization,
     get_choice_text,
     create_html_file_modular,

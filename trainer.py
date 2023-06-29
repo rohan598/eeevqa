@@ -9,14 +9,14 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import DeviceStatsMonitor
 
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger, CometLogger
 import torch
 
 from transformers import AutoProcessor
 
 from eeevqa.utils.args import parse_args, parse_boolean
 from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule
-from eeevqa.utils.dataloaders.raw_data import read_captions, read_problem_list
+from eeevqa.utils.dataloaders.raw_data import read_json_file
 
 from eeevqa.models.pix2struct.model import Pix2StructVanilla
 
@@ -28,13 +28,12 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    if args.task_name == "univqa":
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image image_mean image_std output")
-    else:
-        ScienceQA = namedtuple("ScienceQA", "sample_num header_text image text_context lecture image_mean image_std output")
+    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
 
-    captions_dict = read_captions(args.data_root, args.captions_filename)
-    problem_list = read_problem_list(os.path.join(args.data_root, args.json_files_dir), args.problems_filename)
+   
+    problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)   
+    problem_list = read_json_file(problem_list_path)
+
     print("----- Read Dataset -----") 
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -55,17 +54,14 @@ if __name__ == '__main__':
 
     pickle_files_path = os.path.join(args.data_root, args.pickle_files_dir, args.data_version, args.data_type, str(args.layout_type))
     sdm = ScienceQADataModule(
-            model_name_or_path=args.base_model_name,
-            max_new_tokens = args.max_new_tokens,
-            max_patches = args.max_patches,
-            output_format=args.output_format,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
-            processor = processor,
             pickle_files_path = pickle_files_path,
             train_split =  train_split,
             val_split =  val_split,
             test_split =  test_split,
+            num_workers = args.num_workers,
+            pin_memory = True if device == "cuda" else False
     )
 
     sdm.setup("fit")
@@ -79,8 +75,6 @@ if __name__ == '__main__':
             task_name = args.task_name,
             processor=processor,
             learning_rate = args.learning_rate,
-            weight_decay=args.weight_decay,
-            adam_epsilon = 1e-8,
             max_new_tokens = args.max_new_tokens,
             train_batch_size = args.train_batch_size,
             eval_batch_size = args.eval_batch_size,
@@ -104,11 +98,16 @@ if __name__ == '__main__':
             save_last = True,
             every_n_epochs = args.save_every_n_epoch,
     )
-    wandb_logger = WandbLogger(
-        project="mmvqa",
+    # logger = WandbLogger(
+    #     project="pix2struct",
+    #     name = f"run_{args.data_type}_lt{str(args.layout_type)}_{train_split}_of_{args.output_format}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
+    #     save_dir = args.output_root
+    # )
+    logger = TensorBoardLogger(
         name = f"run_{args.data_type}_lt{str(args.layout_type)}_{train_split}_of_{args.output_format}_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}",
-        save_dir = args.output_root
+        save_dir = os.path.join(args.output_root,"tensorboard")
     )
+
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
     early_stopping = EarlyStopping(monitor=args.es_monitor, min_delta=args.es_min_delta, patience=args.es_patience, verbose=False, mode=args.es_mode)
@@ -129,9 +128,9 @@ if __name__ == '__main__':
             accelerator="gpu",
             devices=args.gpu_cnt if torch.cuda.is_available() else None,
             strategy="ddp",  
-            precision="bf16",
-            callbacks=[checkpoint_callback, lr_monitor, early_stopping, DeviceStatsMonitor()],
-            logger = wandb_logger,
+            precision="bf16-mixed",
+            callbacks=[checkpoint_callback, lr_monitor, early_stopping],
+            logger = logger,
             log_every_n_steps = log_every_n_steps,
             profiler="simple"
         )

@@ -66,15 +66,15 @@ def parse_args():
 
     # training args
     parser.add_argument('--train_split', type=str, default='minitrain', choices=['train', 'trainval', 'minitrain','image_train', 'image_minitrain'])
-    parser.add_argument('--val_split', type=str, default='minival', choices=['val', 'minival', 'image_val','image_minival'])
-    parser.add_argument('--test_split', type=str, default='minitest', choices=['test', 'minitest','image_test','image_minitest'])
+    parser.add_argument('--val_split', type=str, default='minival', choices=['val', 'test', 'minival', 'image_val','image_minival'])
+    parser.add_argument('--test_split', type=str, default='image_minitest', choices=['test', 'minitest','image_test','image_minitest'])
 
 
     parser.add_argument('--save_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
 
-    parser.add_argument('--save_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
+    # parser.add_argument('--save_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
 
-    parser.add_argument('--log_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
+    # parser.add_argument('--log_every_n_epoch', type=int, default=1, help='model checkpoint with every n epochs.')
 
     parser.add_argument('--log_every_n_steps', type=int, default=1, help='model checkpoint with every n epochs.')
 
@@ -86,20 +86,18 @@ def parse_args():
 
     parser.add_argument('--es_patience', type=int, default=3, help='Early stopping monitor metric max epochs without improvement')
 
-    parser.add_argument('--debug', action='store_true')
-
     parser.add_argument('--dummy_run', type=str, default='no', choices=['yes', 'no'])
 
     parser.add_argument('--seed', type=int, default=42, help='random seed')
 
     parser.add_argument('--max_patches',
                         type=int,
-                        default=1024,
+                        default=4096,
                         help='The maximum number of img patches allowed.')
     
     parser.add_argument('--max_new_tokens',
                         type=int,
-                        default=512,
+                        default=128,
                         help='The maximum number of tokens allowed for the generated answer.')
 
 
@@ -125,10 +123,10 @@ def parse_args():
                         default = 1e-5,
                         help='learning rate')
     
-    parser.add_argument('-wd', '--weight_decay', 
-                        type=float,
-                        default = 1e-5,
-                        help='weight decay')
+    # parser.add_argument('-wd', '--weight_decay', 
+    #                     type=float,
+    #                     default = 1e-5,
+    #                     help='weight decay')
 
     parser.add_argument('--skip_scheduler', type=str, default="True")
     
