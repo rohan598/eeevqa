@@ -9,16 +9,16 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import DeviceStatsMonitor
 
-from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger, CometLogger
+from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
 import torch
 
 from transformers import AutoProcessor
 
 from eeevqa.utils.args import parse_args, parse_boolean
-from eeevqa.utils.dataloaders.sciencevqa import ScienceQADataModule
+from eeevqa.utils.dataloaders.scienceqa import ScienceQADataModule
 from eeevqa.utils.dataloaders.raw_data import read_json_file
 
-from eeevqa.models.pix2struct.model import Pix2StructVanilla
+from eeevqa.models.scienceqa.pix2struct import Pix2StructVanilla
 
 if __name__ == '__main__':
     # Global settings
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num header_text image flattened_patches attention_mask raw_output output")
 
    
     problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)   

@@ -14,16 +14,18 @@ from eeevqa.utils.dataloaders.raw_data import load_pickle_dataset, save_dataset
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # make all text targets at once
-def create_text_data(samples_dict, max_new_tokens=52, processor=None):
+def create_text_data(samples_dict, max_new_tokens=128, processor=None):
     
     text_data = {
         "targets": [],
-        "raw_output": []
+        "raw_output": [],
+        "sample_list":[]
     }
 
-    # group all text inputs
     sample_keys = list(samples_dict.keys())
     sample_keys.sort()
+    
+    text_data["sample_list"] = sample_keys
 
     for key in sample_keys:  
         text_data["raw_output"].append(samples_dict[key]["raw_output"])
@@ -35,14 +37,7 @@ def create_text_data(samples_dict, max_new_tokens=52, processor=None):
                               add_special_tokens=True, 
                               max_length=max_new_tokens)
     
-    sample_wise_text_data = {}
-    for idx, key in enumerate(sample_keys):  
-        sample_wise_text_data[key] = {
-            "targets": text_data["targets"].input_ids[idx],
-            "raw_output": text_data["raw_output"][idx],
-        }
-        
-    return sample_wise_text_data
+    return text_data
 
 if __name__ == '__main__':
     
@@ -63,6 +58,6 @@ if __name__ == '__main__':
     save_dataset(
         text_data,
         save_dir = save_dir,
-        filename = f"text_data.pkl"
+        filename = "text_data.pkl"
     )
     print("----- Saved Text Dataset -----") 

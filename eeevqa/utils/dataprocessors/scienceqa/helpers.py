@@ -344,9 +344,13 @@ def image_creator(image_dir, problem_list, sample_num=1, stats_dict=None, params
 
 ######### ScienceQA Dataset methods #########
 # Create ScienceQA dataset
-def create_one_scienceqa_example(text_data, img_filename="", sample_num=1, max_patches = 4096, processor=None, TrainQA = None):
+def create_one_scienceqa_example(problem_list, text_data, img_filename="", sample_num=1, options=None, max_patches = 4096, processor=None, TrainQA = None):
     
     #input
+    question_text = problem_list[str(sample_num)]["question"]
+    choice_text = get_choice_text(problem_list[str(sample_num)], options)
+    header_text = question_text + " " + choice_text
+
     image = Image.open(f"{img_filename}.jpg")
     encoding = processor(images=image, return_tensors="pt", add_special_tokens=True, max_patches=max_patches)
     encoding = {k:v.squeeze() for k,v in encoding.items()} 
@@ -356,6 +360,6 @@ def create_one_scienceqa_example(text_data, img_filename="", sample_num=1, max_p
     raw_output = text_data["raw_output"][sample_num]
     output = text_data["targets"].input_ids[sample_num]
     
-    scienceqa_example = TrainQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
+    scienceqa_example = TrainQA(sample_num, header_text, image, flattened_patches, attention_mask, raw_output, output)
 
     return scienceqa_example

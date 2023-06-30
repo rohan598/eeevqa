@@ -82,9 +82,12 @@ def convert_scienceqa_to_dataset(problem_list, pid_splits, params=None):
 
     for sample_num in idx_list:
         img_filename = os.path.join(os.getcwd(), save_dir, f"{data_split}_{sample_num}")
-        dataset.append(create_one_scienceqa_example(text_data,
+        dataset.append(create_one_scienceqa_example(
+                                                    problem_list,
+                                                    text_data,
                                                     img_filename=img_filename, 
                                                     sample_num=sample_num,
+                                                    options = params["options"],
                                                     max_patches=params["max_patches"],
                                                     processor=params["processor"],
                                                     TrainQA = TrainQA))
@@ -96,7 +99,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num header_text image flattened_patches attention_mask raw_output output")
     
     captions_path = os.path.join(args.data_root, args.captions_filename)
     problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)

@@ -1,8 +1,19 @@
-import os
-from PIL import Image, ImageDraw, ImageOps, ImageFont
+import rootutils
 
+root = rootutils.setup_root(
+    search_from=__file__,
+    indicator="setup.py",
+    pythonpath=True,
+    dotenv=True,
+)
+
+
+import os
+import string 
+from PIL import Image
 from eeevqa.utils.dataloaders.raw_data import read_json_file, save_dataset
-from eeevqa.utils.dataloaders.ai2d import render_header, render_text_on_bounding_box
+from eeevqa.utils.dataprocessors.ai2d.helpers import render_header, render_text_on_bounding_box
+
 from eeevqa.utils.args import parse_args
 
 def convert_one_question_AI2D(input_path: str, data_dir: str, font_path: str, skip_image_gen: bool):
@@ -40,18 +51,20 @@ def convert_one_question_AI2D(input_path: str, data_dir: str, font_path: str, sk
         )
         
         if skip_image_gen == False:
-            image_with_header = render_header(
-                image=image_with_placeholders if v["abcLabel"] else image,
-                header=f"{k} {options}",
-                font_path = font_path
-            )
+            # image_with_header = render_header(
+            #     image=image_with_placeholders if v["abcLabel"] else image,
+            #     header=f"{k} {options}",
+            #     font_path = font_path
+            # )
 
             # save new image
-            save_dir = os.path.join(data_dir, "new_data","images")
+            save_dir = os.path.join(data_dir, "new_data","images2")
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
 
-            image_with_header.save(os.path.join(save_dir, f"{v['questionId']}.png"))
+            # image_with_header.save(os.path.join(save_dir, f"{v['questionId']}.png"))
+
+            image_with_placeholders.save(os.path.join(save_dir, f"{v['questionId']}.png"))
 
         # get output for this sample
         parse = v["answerTexts"][v["correctAnswer"]]
@@ -91,10 +104,10 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    sample_dict, missing_question_list = convert_AI2D(
+    samples_dict, missing_question_list = convert_AI2D(
         data_dir = args.data_root, 
         font_path = os.path.join(args.assets_dir,"arial.ttf"), 
-        skip_image_gen = skip_image_gen
+        skip_image_gen = False
     )
     
     print("----- Created Image Collection -----") 

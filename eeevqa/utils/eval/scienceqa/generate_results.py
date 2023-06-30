@@ -19,8 +19,8 @@ from transformers import AutoProcessor, Pix2StructForConditionalGeneration
 
 from eeevqa.utils.args import parse_args, parse_boolean
 from eeevqa.utils.dataloaders.raw_data import read_json_file
-from eeevqa.utils.dataloaders.sciencevqa import create_eval_dataloader
-from eeevqa.models.pix2struct.model import Pix2StructVanilla
+from eeevqa.utils.dataloaders.scienceqa import create_eval_dataloader
+from eeevqa.models.scienceqa.pix2struct import Pix2StructVanilla
 from eeevqa.utils.eval.scienceqa.metrics import get_pred_idx, extract_answer, extract_explanation
 
 def get_result_filepath(args, model_name, result_type):
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    TrainQA = namedtuple("TrainQA", "sample_num image flattened_patches attention_mask raw_output output")
+    TrainQA = namedtuple("TrainQA", "sample_num header_text image flattened_patches attention_mask raw_output output")
     
     problem_list_path = os.path.join(args.data_root, args.json_files_dir, args.problems_filename)
     problem_list = read_json_file(problem_list_path)

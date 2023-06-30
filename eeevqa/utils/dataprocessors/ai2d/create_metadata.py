@@ -1,7 +1,18 @@
+import rootutils
+
+root = rootutils.setup_root(
+    search_from=__file__,
+    indicator="setup.py",
+    pythonpath=True,
+    dotenv=True,
+)
+
 import os
+import pandas as pd
 
 from eeevqa.utils.dataloaders.raw_data import read_json_file, save_dataset, load_pickle_dataset
-from eeevqa.utils.dataprocessors.ai2d import convert_AI2D
+
+from eeevqa.utils.dataprocessors.ai2d.create_image_data import convert_AI2D
 
 
 from eeevqa.utils.args import parse_args, parse_boolean
@@ -36,7 +47,7 @@ def create_metadata(data_dir):
     
     missing_from_all_test_list = []
     all_test_present_list = []
-    for sidx in all_test_split:
+    for sidx in all_test_list:
         if sidx not in all_samples_list:
             missing_from_all_test_list.append(sidx)
         else:
@@ -49,7 +60,7 @@ def create_metadata(data_dir):
     metadata_dict["missing_from_all_test_list"] = missing_from_all_test_list
     metadata_dict["all_test_present_list"] = all_test_present_list
     
-    missing_question_list = load_pickle_dataset(os.path.join(data_dir, "new_data"), "missing_question_list.pkl")
+    missing_question_list = load_pickle_dataset(os.path.join(data_dir, "new_data"), "missing_question_list")
     all_samples_question_list = []
     for sidx in all_samples_list:
         if sidx not in missing_question_list:
@@ -141,6 +152,9 @@ def create_metadata(data_dir):
     metadata_dict["train_split_new_images"] = train_split_new_images    
     metadata_dict["test_split_new_images"] = test_split_new_images
     
+    metadata_dict["tiny_train_split_new_images"] = train_split_new_images[:100]    
+    metadata_dict["tiny_test_split_new_images"] = test_split_new_images[:20]
+
     return metadata_dict
 
 
@@ -150,7 +164,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("----- Parsed Arguments -----")
 
-    sample_dict, missing_question_list = convert_AI2D(
+    samples_dict, missing_question_list = convert_AI2D(
         data_dir = args.data_root, 
         font_path = os.path.join(args.assets_dir,"arial.ttf"), 
         skip_image_gen = True

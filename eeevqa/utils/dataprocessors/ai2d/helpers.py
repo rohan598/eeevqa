@@ -1,4 +1,6 @@
-
+from PIL import Image, ImageDraw, ImageOps, ImageFont
+from typing import Iterable
+import textwrap
 
 def render_text_on_bounding_box(
     text: str,
