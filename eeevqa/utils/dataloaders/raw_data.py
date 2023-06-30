@@ -18,6 +18,12 @@ def load_data_split(pickle_files_path, split):
     dataset = load_pickle_dataset(pickle_files_path, source=split)
     return dataset
 
+# saving functionality
+def save_dataset(dataset, save_dir="", filename=""):
+    pickle_filename = os.path.join(save_dir, filename)
+    with open(pickle_filename, 'wb') as f:
+        pickle.dump(dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
 # def load_data(data_root, captions_filename, json_files_path, problems_filename, save_dir, pickle_files_path, train_split, val_split, test_split):
 
 #     # read_captions

@@ -10,8 +10,7 @@ root = rootutils.setup_root(
 import os
 from transformers import AutoProcessor
 
-from eeevqa.utils.dataloaders.raw_data import read_json_file
-from eeevqa.utils.dataprocessors.helpers import save_dataset
+from eeevqa.utils.dataloaders.raw_data import read_json_file, save_dataset
 from eeevqa.utils.args import parse_args, parse_boolean
 
 # make all text targets at once

@@ -95,7 +95,7 @@ if __name__ == '__main__':
             monitor='val_acc',
             mode = "max",
             save_top_k = 1,
-            save_last = True,
+            save_last = False,
             every_n_epochs = args.save_every_n_epoch,
     )
     # logger = WandbLogger(

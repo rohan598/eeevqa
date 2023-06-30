@@ -359,9 +359,3 @@ def create_one_scienceqa_example(text_data, img_filename="", sample_num=1, max_p
     scienceqa_example = TrainQA(sample_num, image, flattened_patches, attention_mask, raw_output, output)
 
     return scienceqa_example
-
-# saving functionality
-def save_dataset(dataset, save_dir="", filename=""):
-    pickle_filename = os.path.join(save_dir, filename)
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(dataset, f)

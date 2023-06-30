@@ -14,9 +14,9 @@ import pickle
 from collections import namedtuple
 from transformers import AutoProcessor
 
-from eeevqa.utils.dataprocessors.scienceqa.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example, save_dataset
+from eeevqa.utils.dataprocessors.scienceqa.helpers import input_to_image_initialization, create_html_file_modular, save_html_file, convert_html_to_pdf, convert_pdf_to_image, remove_white_space, image_creator, create_one_scienceqa_example
 
-from eeevqa.utils.dataloaders.raw_data import read_json_file
+from eeevqa.utils.dataloaders.raw_data import read_json_file, save_dataset
 
 from eeevqa.utils.args import parse_args, parse_boolean
 
